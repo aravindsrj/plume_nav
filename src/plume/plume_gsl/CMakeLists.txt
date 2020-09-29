@@ -149,6 +149,12 @@ target_link_libraries(metaheuristic
   ${catkin_LIBRARIES}
 )
 
+add_executable(move_drone_client src/move_drone_client.cpp)
+add_dependencies(move_drone_client ${catkin_EXPORTED_TARGETS})
+target_link_libraries(move_drone_client
+  ${catkin_LIBRARIES}
+)
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
