@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   actionlib
   actionlib_msgs
+  tf
   # gaden_player
 )
 
@@ -113,8 +114,8 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES plume_gsl
+ INCLUDE_DIRS include
+ LIBRARIES plume_gsl
 #  CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
 )
@@ -143,17 +144,19 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(metaheuristic src/metaheuristic.cpp)
+add_executable(metaheuristic 
+  src/metaheuristic.cpp
+  src/move_drone_client.cpp)
 add_dependencies(metaheuristic ${catkin_EXPORTED_TARGETS})
 target_link_libraries(metaheuristic
   ${catkin_LIBRARIES}
 )
 
-add_executable(move_drone_client src/move_drone_client.cpp)
-add_dependencies(move_drone_client ${catkin_EXPORTED_TARGETS})
-target_link_libraries(move_drone_client
-  ${catkin_LIBRARIES}
-)
+# add_executable(move_drone_client src/move_drone_client.cpp)
+# add_dependencies(move_drone_client ${catkin_EXPORTED_TARGETS})
+# target_link_libraries(move_drone_client
+#   ${catkin_LIBRARIES}
+# )
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
