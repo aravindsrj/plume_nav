@@ -99,8 +99,6 @@ class Localization
 
 	void declareSourceCondition();
 
-	double findMean(const std::queue<std::pair<double,geometry_msgs::Point>>& array) const;
-
 	double findMean(const std::vector<double>& array) const;
 
 	void getHeuristicMeta();

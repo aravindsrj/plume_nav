@@ -96,12 +96,6 @@ void Localization::concentrationCallback(const olfaction_msgs::gas_sensor::Const
 	m_concentration_history.push_back(msg->raw);
 }
 
-double Localization::findMean(const std::queue<std::pair<double,geometry_msgs::Point>>& array) const
-{
-	double sum = 0;
-	// for (int )
-}
-
 double Localization::findMean(const std::vector<double>& array) const
 {
 
