@@ -21,6 +21,21 @@ enum Algorithm
 	ZIGZAG,
 	METAHEURISTIC
 };
+
+class GasHistory
+{
+	std::vector<std::pair<double, geometry_msgs::Point>> array;
+	int m_size;
+	double m_sum;
+
+public:
+	GasHistory();
+	void setSize(const int& size);
+	void append(const std::pair<double,geometry_msgs::Point>);
+	double mean() const;
+	geometry_msgs::Point getPoint() const;
+};
+
 class Localization
 {
 	ros::NodeHandle m_nh;
@@ -37,6 +52,7 @@ class Localization
 	Range m_concentration_range;
 
 	geometry_msgs::Point m_max_source_probability;
+	geometry_msgs::Point m_max_concentration_at;
 	olfaction_msgs::gas_sensor m_current_gas_concentration;
 	
 	unsigned int m_plume_lost_counter;
@@ -47,7 +63,7 @@ class Localization
 	double m_min_concentration;
 	double m_probability_threshold;
 	double m_maintain_dir_prob;
-	double m_max_conc_value;
+	double m_max_concentration_value;
 
 	bool m_max_prob_message_received;
 	bool m_moving_to_source;
@@ -68,7 +84,8 @@ class Localization
 	std::queue<double> m_wind_dir_history;
 	int m_wind_history_size;
 
-	std::queue<double> m_concentration_history;
+	std::vector<double> m_concentration_history;
+	GasHistory m_concentration_points;
 
 	void calcWaypointSlopeIntercept();
 
@@ -81,6 +98,10 @@ class Localization
 	void concentrationCallback(const olfaction_msgs::gas_sensor::ConstPtr &msg);
 
 	void declareSourceCondition();
+
+	double findMean(const std::queue<std::pair<double,geometry_msgs::Point>>& array) const;
+
+	double findMean(const std::vector<double>& array) const;
 
 	void getHeuristicMeta();
 
@@ -99,6 +120,7 @@ class Localization
 
 	void rasterDone();
 
+	/// \brief Calculate resolution of waypoint based on concentration readings
 	void waypointResCalc();
 
 	void windCallback(const olfaction_msgs::anemometer::ConstPtr &msg);

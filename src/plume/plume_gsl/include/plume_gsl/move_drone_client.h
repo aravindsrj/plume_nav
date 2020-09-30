@@ -18,7 +18,6 @@ struct Range
 
 class MoveDroneClient
 {
-	geometry_msgs::Point m_position;
 	geometry_msgs::Point m_waypoint_prev;
 	geometry_msgs::Point m_waypoint;
 
@@ -42,6 +41,8 @@ class MoveDroneClient
 	void sendWaypoint(const geometry_msgs::Point &waypoint);
 
 public:
+
+	geometry_msgs::Point position;
 
 	double drone_heading;
 	
