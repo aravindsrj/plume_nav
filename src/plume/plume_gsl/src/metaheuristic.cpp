@@ -1,37 +1,94 @@
 // #include "ros/ros.h"
 #include "plume_gsl/metaheuristic.h"
 
-GasHistory::GasHistory():
-m_sum(0.0)
+template<typename T>
+ReadingHistory<T>::ReadingHistory():
+m_sum(0.0),
+m_size(-1)
 {
 }
 
-void GasHistory::setSize(const int& size)
+template<typename T>
+void ReadingHistory<T>::setSize(const int& size)
 {
 	m_size = size;
 }
 
-void GasHistory::append(const std::pair<double,geometry_msgs::Point> data)
+template<>
+void ReadingHistory<std::pair<double, geometry_msgs::Point>>::append(
+	const std::pair<double, geometry_msgs::Point> data)
 {
 	m_sum += data.first;
 	array.push_back(data);
 	if (array.size() > m_size)
 	{
 		m_sum -= array[0].first;
-		array.erase(array.begin());
+		array.pop_front();
 	}
 	assert(m_sum >= 0);
 }
 
-double GasHistory::mean() const
+template<>
+void ReadingHistory<double>::append(const double data)
+{
+	array.push_back(data);
+	if (m_size != -1) // If the max_size variable is set
+	{
+		if (array.size() > m_size)
+		{
+			array.pop_front();
+		}
+	}
+}
+
+template<typename T>
+void ReadingHistory<T>::pop()
+{
+	array.pop_front();
+}
+
+template<>
+double ReadingHistory<std::pair<double, geometry_msgs::Point>>::mean() const
 {
 	return m_sum/array.size();
 }
 
-geometry_msgs::Point GasHistory::getPoint() const
+template<typename T>
+int ReadingHistory<T>::size() const
+{
+	return array.size();
+}
+
+template<>
+double ReadingHistory<double>::mean(const int& begin, const int& end) const
+{
+	assert(0 <= begin <= end);
+	assert(end <= array.size());
+
+	if (begin == end)
+		return array[begin];
+
+	double sum = 0;
+	for (int i = begin; i < end; i++)
+	{
+		sum += array[i];
+	}
+
+	return sum/(end-begin);
+}
+
+template<>
+geometry_msgs::Point ReadingHistory<std::pair<double,geometry_msgs::Point>>::getPoint() const
 {
 	assert(array.size() > 0);
 	return array[array.size()/2].second;
+}
+
+template<typename T>
+void ReadingHistory<T>::clear()
+{
+	array.clear();
+	m_sum = 0.0;
 }
 
 Localization::Localization() :
@@ -73,10 +130,44 @@ m_max_concentration_value(-1)
 	m_nh.param("probability_threshold", m_probability_threshold, 1e-4);
 	m_nh.param("probability_to_maintain_dir", m_maintain_dir_prob, 0.4);
 	m_nh.param("lost_distance", m_lost_distance, 1.0);
-	m_nh.param("wind_history_size", m_wind_history_size, 15);
+
+	m_nh.param("wind_history_size", i_temp, 15);
+	m_wind_dir_history.setSize(i_temp);
+
 	m_nh.param("recent_concentration_queue_size", i_temp, 5);
 	m_concentration_points.setSize(i_temp);
 
+	m_wind_sub = m_nh.subscribe("/Anemometer/WindSensor_reading", 
+		10, &Localization::windCallback, this);
+	m_gas_sub = m_nh.subscribe("/PID/Sensor_reading", 
+		10, &Localization::concentrationCallback, this);
+	m_prob_sub = m_nh.subscribe("/max_probability", 
+		10, &Localization::maxSourceProbabilityCallback, this);
+
+}
+
+void Localization::changeTemperature()
+{
+	m_Temperature -= m_delta_temp;
+	if (m_Temperature < 0)
+		ROS_ERROR("Temperature parameter has gone below zero");
+	ROS_INFO("New Temperature: %.3lf", m_Temperature);
+}
+
+double Localization::checkGradient() const
+{
+	int L = m_concentration_history.size();
+
+	assert(L > 0);
+	/// \todo Error if L == 0
+	if (L < 2)
+	{
+		ROS_WARN("Concentration data not long enough");
+	}
+
+	double gradient = m_concentration_history.mean(L/2, L) - m_concentration_history.mean(0,L/2);
+
+	return gradient;
 }
 
 void Localization::concentrationCallback(const olfaction_msgs::gas_sensor::ConstPtr& msg)
@@ -93,12 +184,12 @@ void Localization::concentrationCallback(const olfaction_msgs::gas_sensor::Const
 	}
 
 	// Updating the concentration history queue
-	m_concentration_history.push_back(msg->raw);
+	m_concentration_history.append(msg->raw);
 }
 
-double Localization::findMean(const std::vector<double>& array) const
+void Localization::goToMaxConcentration()
 {
-
+	m_drone.goToWaypoint(m_max_concentration_at);
 }
 
 void Localization::maxSourceProbabilityCallback(const geometry_msgs::Point::ConstPtr& msg)
@@ -136,11 +227,7 @@ void Localization::windCallback(const olfaction_msgs::anemometer::ConstPtr &msg)
 
 	normalize_angle(wind_dir);
 
-	m_wind_dir_history.push(wind_dir);
-
-	// Delete old wind data
-	if (m_wind_dir_history.size() > m_wind_history_size)
-		m_wind_dir_history.pop();
+	m_wind_dir_history.append(wind_dir);
 
 }
 

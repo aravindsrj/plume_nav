@@ -12,6 +12,10 @@ m_action_client("waypoint")
 
 }
 
+void MoveDroneClient::goToWaypoint(const geometry_msgs::Point &waypoint)
+{
+    
+}
 
 // int main()
 // {

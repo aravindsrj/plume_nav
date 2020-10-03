@@ -11,6 +11,7 @@
 #include "tf/transform_listener.h"
 
 #include <queue>
+#include <deque>
 
 #pragma once
 
@@ -22,23 +23,39 @@ enum Algorithm
 	METAHEURISTIC
 };
 
-class GasHistory
+template<typename T>
+class ReadingHistory
 {
-	std::vector<std::pair<double, geometry_msgs::Point>> array;
+	std::deque<T> array;
 	int m_size;
 	double m_sum;
 
 public:
-	GasHistory();
+	
+	ReadingHistory();
 	void setSize(const int& size);
-	void append(const std::pair<double,geometry_msgs::Point>);
+	void append(const std::pair<double, geometry_msgs::Point>);
+	void append(const double);
+	void pop();
+
+	/// \brief Find mean of the concentrations in the vector of pairs
 	double mean() const;
+
+	int size() const;
+
+	/// \brief Find mean value between two positions in a double array
+	double mean(const int& begin, const int& end) const;
+	void clear();
 	geometry_msgs::Point getPoint() const;
 };
 
 class Localization
 {
 	ros::NodeHandle m_nh;
+
+	ros::Subscriber m_wind_sub;
+	ros::Subscriber m_gas_sub;
+	ros::Subscriber m_prob_sub;
 	
 	Algorithm m_algorithm;
 	MoveDroneClient m_drone;
@@ -81,11 +98,9 @@ class Localization
 	double m_meta_std;
 	double m_lost_distance;
 
-	std::queue<double> m_wind_dir_history;
-	int m_wind_history_size;
-
-	std::vector<double> m_concentration_history;
-	GasHistory m_concentration_points;
+	ReadingHistory<std::pair<double, geometry_msgs::Point>> m_concentration_points;
+	ReadingHistory<double> m_concentration_history;
+	ReadingHistory<double> m_wind_dir_history;
 
 	void calcWaypointSlopeIntercept();
 
@@ -98,8 +113,6 @@ class Localization
 	void concentrationCallback(const olfaction_msgs::gas_sensor::ConstPtr &msg);
 
 	void declareSourceCondition();
-
-	double findMean(const std::vector<double>& array) const;
 
 	void getHeuristicMeta();
 
