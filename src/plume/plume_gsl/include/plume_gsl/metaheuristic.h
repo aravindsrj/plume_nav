@@ -47,17 +47,21 @@ class Localization
 
 	geometry_msgs::Point m_max_source_probability;
 	geometry_msgs::Point m_max_concentration_at;
+	geometry_msgs::Point m_previous_position;
 	olfaction_msgs::gas_sensor m_current_gas_concentration;
 	
 	unsigned int m_plume_lost_counter;
 	double m_waypoint_heading;
+
+	/// \brief Zigzag angle to be used in zigzag algorithm
 	double m_alpha;
-	double m_position_epsilon;
-	double m_conc_grad_epsilon;
+	double m_epsilon_position;
+	double m_epsilon_conc_grad;
 	double m_min_concentration;
 	double m_probability_threshold;
 	double m_maintain_dir_prob;
 	double m_max_concentration_value;
+	double m_distance_from_waypoint;
 
 	bool m_max_prob_message_received;
 	bool m_moving_to_source;
@@ -90,6 +94,9 @@ class Localization
 	void concentrationCallback(const olfaction_msgs::gas_sensor::ConstPtr &msg);
 
 	void declareSourceCondition();
+
+	double euclideanDistance(const geometry_msgs::Point&,
+		const geometry_msgs::Point&) const;
 
 	void getHeuristicMeta();
 

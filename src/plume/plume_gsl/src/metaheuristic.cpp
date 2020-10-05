@@ -10,7 +10,8 @@ m_moving_to_source(false),
 m_raster_scan_complete(false),
 m_initial_scan_complete(false),
 m_plume_lost_counter(0),
-m_max_concentration_value(-1)
+m_max_concentration_value(-1),
+m_distance_from_waypoint(0.0)
 {
 	std::vector<double> temp_ranges;
 	double d_temp;
@@ -33,8 +34,8 @@ m_max_concentration_value(-1)
 	m_nh.param("initial_zigzag_angle", m_alpha, 35.0);
 	m_alpha = m_alpha * M_PI / 180;
 
-	m_nh.param("position_epsilon", m_position_epsilon, 1e-4);
-	m_nh.param("conc_grad_epsilon", m_conc_grad_epsilon, 0.0);
+	m_nh.param("position_epsilon", m_epsilon_position, 3e-3);
+	m_nh.param("conc_grad_epsilon", m_epsilon_conc_grad, 0.0);
 	m_nh.param("minimum_detectable_concentration", m_min_concentration, m_concentration_range.min);
 	m_nh.param("probability_threshold", m_probability_threshold, 1e-4);
 	m_nh.param("probability_to_maintain_dir", m_maintain_dir_prob, 0.4);
@@ -96,6 +97,13 @@ void Localization::concentrationCallback(const olfaction_msgs::gas_sensor::Const
 	m_concentration_history.append(msg->raw);
 }
 
+double Localization::euclideanDistance(const geometry_msgs::Point& point1,
+	const geometry_msgs::Point& point2) const
+{
+	return (sqrt(pow(point1.x - point2.x, 2) 
+		+ pow(point1.y - point2.y, 2)));
+}
+
 void Localization::goToMaxConcentration()
 {
 	m_drone.goToWaypoint(m_max_concentration_at);
@@ -142,12 +150,37 @@ void Localization::windCallback(const olfaction_msgs::anemometer::ConstPtr &msg)
 
 void Localization::run()
 {
+
+	/// \todo Give initial value for m_previous_position
+
+	m_distance_from_waypoint += euclideanDistance(m_drone.position, m_previous_position);
+	m_previous_position = m_drone.position;
+
+	// New way of checking if waypoint is reached
+	if ((*m_waypoint_res - m_distance_from_waypoint) < m_epsilon_position)
+	{
+		m_distance_from_waypoint = 0.0;
+	}
+	else
+	{
+		return;
+	}
 	
+
 	// Last step
 	m_concentration_history.clear();
 }
 
-int main()
+int main(int argc, char **argv)
 {
+	ros::init(argc, argv, "Metaheuristic");
+	ros::Rate r(30);
+	Localization obj;
+	while(ros::ok())
+	{
+		obj.run();
+		r.sleep();
+		ros::spinOnce();
+	}
 	return 0;
 }
