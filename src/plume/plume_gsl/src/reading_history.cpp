@@ -1,27 +1,17 @@
 #include "plume_gsl/reading_history.h"
 
-template<>
-ReadingHistory<std::pair<double, geometry_msgs::Point>>::ReadingHistory():
+template<typename T>
+ReadingHistory<T>::ReadingHistory():
 m_sum(0.0),
 m_size(-1)
 {
 }
 
-template<>
-ReadingHistory<double>::ReadingHistory():
-m_sum(0.0),
-m_size(-1)
-{
-}
+template class ReadingHistory<double>;
+template class ReadingHistory<std::pair<double, geometry_msgs::Point>>;
 
-template<>
-void ReadingHistory<std::pair<double, geometry_msgs::Point>>::setSize(const int& size)
-{
-	m_size = size;
-}
-
-template<>
-void ReadingHistory<double>::setSize(const int& size)
+template<typename T>
+void ReadingHistory<T>::setSize(const int& size)
 {
 	m_size = size;
 }
@@ -65,14 +55,8 @@ double ReadingHistory<std::pair<double, geometry_msgs::Point>>::mean() const
 	return m_sum/array.size();
 }
 
-template<>
-int ReadingHistory<std::pair<double,geometry_msgs::Point>>::size() const
-{
-	return array.size();
-}
-
-template<>
-int ReadingHistory<double>::size() const
+template<typename T>
+int ReadingHistory<T>::size() const
 {
 	return array.size();
 }
@@ -102,15 +86,8 @@ geometry_msgs::Point ReadingHistory<std::pair<double,geometry_msgs::Point>>::get
 	return array[array.size()/2].second;
 }
 
-template<>
-void ReadingHistory<double>::clear()
-{
-	array.clear();
-	m_sum = 0.0;
-}
-
-template<>
-void ReadingHistory<std::pair<double,geometry_msgs::Point>>::clear()
+template<typename T>
+void ReadingHistory<T>::clear()
 {
 	array.clear();
 	m_sum = 0.0;
