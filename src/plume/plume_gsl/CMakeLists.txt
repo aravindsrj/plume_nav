@@ -146,6 +146,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(metaheuristic 
   src/metaheuristic.cpp
+  src/reading_history.cpp
   src/move_drone_client.cpp)
 add_dependencies(metaheuristic ${catkin_EXPORTED_TARGETS})
 target_link_libraries(metaheuristic
