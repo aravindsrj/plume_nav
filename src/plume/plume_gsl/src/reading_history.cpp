@@ -7,6 +7,7 @@ m_size(-1)
 {
 }
 
+// Explicit instantiation
 template class ReadingHistory<double>;
 template class ReadingHistory<std::pair<double, geometry_msgs::Point>>;
 
@@ -83,6 +84,8 @@ template<>
 geometry_msgs::Point ReadingHistory<std::pair<double,geometry_msgs::Point>>::getPoint() const
 {
 	assert(array.size() > 0);
+
+	// Returns the the point at the median of the array
 	return array[array.size()/2].second;
 }
 

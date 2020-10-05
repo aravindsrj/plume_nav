@@ -8,7 +8,11 @@ template<typename T>
 class ReadingHistory
 {
 	std::deque<T> array;
+
+	/// \brief Max size of the array
 	int m_size;
+
+	/// \brief Records the sum of the elements in the array
 	double m_sum;
 
 public:
@@ -22,10 +26,14 @@ public:
 	/// \brief Find mean of the concentrations in the vector of pairs
 	double mean() const;
 
+	/// \brief Returns the size of the array
 	int size() const;
 
 	/// \brief Find mean value between two positions in a double array
 	double mean(const int& begin, const int& end) const;
+
+	/// \brief Clears the array
 	void clear();
+
 	geometry_msgs::Point getPoint() const;
 };
