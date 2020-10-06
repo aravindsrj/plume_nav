@@ -205,8 +205,13 @@ void Localization::run()
 
 	if (!m_got_initial_heuristic)
 	{
-		getInitialHeuristic();
+		if (!getInitialHeuristic())
+		{
+			ROS_INFO_ONCE("Waiting to get initial heuristic");
+			return;
+		}
 		waypointResCalc();
+		m_drone.followDirection(m_heading_angle);
 	}
 
 	// New way of checking if waypoint is reached
