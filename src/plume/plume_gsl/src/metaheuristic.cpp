@@ -1,4 +1,6 @@
 #include "plume_gsl/metaheuristic.h"
+#include <random>
+
 
 Localization::Localization() :
 m_waypoint_client("waypoint"),
@@ -9,6 +11,7 @@ m_lost_plume(false),
 m_moving_to_source(false),
 m_raster_scan_complete(false),
 m_initial_scan_complete(false),
+m_got_initial_heuristic(false),
 m_plume_lost_counter(0),
 m_max_concentration_value(-1),
 m_distance_from_waypoint(0.0)
@@ -48,11 +51,14 @@ m_distance_from_waypoint(0.0)
 	m_concentration_points.setSize(i_temp);
 
 	m_wind_sub = m_nh.subscribe("/Anemometer/WindSensor_reading", 
-		10, &Localization::windCallback, this);
+		5, &Localization::windCallback, this);
 	m_gas_sub = m_nh.subscribe("/PID/Sensor_reading", 
-		10, &Localization::concentrationCallback, this);
+		5, &Localization::concentrationCallback, this);
 	m_prob_sub = m_nh.subscribe("/max_probability", 
 		10, &Localization::maxSourceProbabilityCallback, this);
+
+	// Seed random number generator
+	std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
 }
 
@@ -102,6 +108,47 @@ double Localization::euclideanDistance(const geometry_msgs::Point& point1,
 {
 	return (sqrt(pow(point1.x - point2.x, 2) 
 		+ pow(point1.y - point2.y, 2)));
+}
+
+bool Localization::getInitialHeuristic()
+{
+	if (m_wind_dir_history.size() != m_wind_dir_history.maxSize())
+		return false;
+
+	ROS_INFO("Getting Initial Heuristic");
+
+	std::default_random_engine generator;
+	std::normal_distribution<double> distribution(0.0, m_meta_std);
+
+	switch (m_algorithm)
+	{
+		case UPWIND:
+		case FOLLOW_WIND:
+			ROS_INFO("Following wind");
+			m_heading_angle = M_PI + m_wind_dir_history.mean();
+			break;
+
+		case ZIGZAG:
+			ROS_INFO("Choosing zigzag direction");
+			if ((float) rand()/RAND_MAX >= 0.5)
+				m_alpha *= -1;
+			m_heading_angle = M_PI + m_wind_dir_history.mean() + m_alpha;
+			break;
+
+		case METAHEURISTIC:
+			m_heading_angle = atan2(m_max_source_probability.y - m_drone.position.y,
+				m_max_source_probability.x - m_drone.position.x);
+			m_heading_angle += distribution(generator);
+			ROS_INFO("Choosing direction with respect to max probability. Angle = %.3lf degrees",
+				m_heading_angle * 180 / M_PI);
+			break;
+
+		default:
+			ROS_ERROR("Unable to get initial heuristic since no algorithm chosen");
+			return false;
+	}
+	m_got_initial_heuristic = true;
+	return true;
 }
 
 void Localization::goToMaxConcentration()
@@ -155,6 +202,12 @@ void Localization::run()
 
 	m_distance_from_waypoint += euclideanDistance(m_drone.position, m_previous_position);
 	m_previous_position = m_drone.position;
+
+	if (!m_got_initial_heuristic)
+	{
+		getInitialHeuristic();
+		waypointResCalc();
+	}
 
 	// New way of checking if waypoint is reached
 	if ((*m_waypoint_res - m_distance_from_waypoint) < m_epsilon_position)
