@@ -29,9 +29,6 @@ public:
 	/// \brief Returns the size of the array
 	int size() const;
 
-	/// \brief Returns max size of array
-	int maxSize() const;
-
 	/// \brief Find mean value between two positions in a double array
 	double mean(const int& begin, const int& end) const;
 

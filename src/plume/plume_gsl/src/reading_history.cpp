@@ -34,13 +34,11 @@ void ReadingHistory<std::pair<double, geometry_msgs::Point>>::append(
 template<>
 void ReadingHistory<double>::append(const double data)
 {
-	m_sum += data;
 	array.push_back(data);
 	if (m_size != -1) // If the max_size variable is set
 	{
 		if (array.size() > m_size)
 		{
-			m_sum -= array[0];
 			array.pop_front();
 		}
 		
@@ -54,14 +52,17 @@ void ReadingHistory<T>::pop()
 	array.pop_front();
 }
 
-template<typename T>
-double ReadingHistory<T>::mean() const
+template<>
+double ReadingHistory<std::pair<double, geometry_msgs::Point>>::mean() const
 {
-	if (array.size() == 0)
-		throw "Array is empty. Cannot find mean";
 	return m_sum/array.size();
 }
 
+template<typename T>
+int ReadingHistory<T>::size() const
+{
+	return array.size();
+}
 
 template<>
 double ReadingHistory<double>::mean(const int& begin, const int& end) const
@@ -79,18 +80,6 @@ double ReadingHistory<double>::mean(const int& begin, const int& end) const
 	}
 
 	return sum/(end-begin);
-}
-
-template<typename T>
-int ReadingHistory<T>::size() const
-{
-	return array.size();
-}
-
-template<typename T>
-int ReadingHistory<T>::maxSize() const
-{
-	return m_size;
 }
 
 template<>
