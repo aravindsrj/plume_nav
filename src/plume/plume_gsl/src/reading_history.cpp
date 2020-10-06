@@ -43,8 +43,9 @@ void ReadingHistory<double>::append(const double data)
 			m_sum -= array[0];
 			array.pop_front();
 		}
+		
+		assert(m_sum >= 0);
 	}
-	assert(m_sum >= 0);
 }
 
 template<typename T>
