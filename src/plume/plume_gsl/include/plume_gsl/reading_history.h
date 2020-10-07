@@ -7,7 +7,7 @@
 template<typename T>
 class ReadingHistory
 {
-	std::deque<T> array;
+	std::deque<T> m_array;
 
 	/// \brief Max size of the array
 	int m_size;
@@ -22,6 +22,9 @@ public:
 	void append(const std::pair<double, geometry_msgs::Point>);
 	void append(const double);
 	void pop();
+
+	/// \brief Return last appended value
+	double front() const;
 
 	/// \brief Find mean of the concentrations in the vector of pairs
 	double mean() const;
