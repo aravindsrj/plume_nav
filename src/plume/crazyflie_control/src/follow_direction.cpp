@@ -28,8 +28,6 @@ class FollowDirection
   States m_states;
   geometry_msgs::Twist m_vel_msg;
 
-  bool m_action_successful;
-
   double m_epslion_angle;
   double m_goal_velocity;
   double m_goal_heading;
@@ -49,7 +47,6 @@ FollowDirection::FollowDirection():
 m_goal_velocity(0.0),
 m_gain_angular(3.0),
 m_epslion_angle(5e-3),
-m_action_successful(false),
 m_server(nh, "follow_direction", false)
 {
   m_pos_sub = nh.subscribe("/base_pose_ground_truth", 10, &FollowDirection::posCallback, this);
@@ -67,8 +64,6 @@ void FollowDirection::goalCallback()
   
   m_goal_velocity = goal->velocity;
   m_goal_heading = goal->heading;
-
-  m_action_successful = false;
 }
 
 void FollowDirection::posCallback(const nav_msgs::Odometry::ConstPtr& msg)
@@ -103,9 +98,8 @@ void FollowDirection::publishVelocity()
     m_vel_pub.publish(m_vel_msg);
 
     // If action is waiting to be completed
-    if (!m_action_successful)
+    if (m_server.isActive())
     {
-      m_action_successful = true;
       m_server.setSucceeded();
     }
     
@@ -127,12 +121,11 @@ void FollowDirection::publishVelocity()
   m_vel_pub.publish(m_vel_msg);
 
   // If action is waiting to be completed
-  if (!m_action_successful)
+  if (m_server.isActive())
   {
     if (fabs(m_goal_heading - m_states.theta) <= m_epslion_angle 
       and m_vel_msg.linear.x == m_goal_velocity)
     {
-      m_action_successful = true;
       m_server.setSucceeded();
     }
   }
