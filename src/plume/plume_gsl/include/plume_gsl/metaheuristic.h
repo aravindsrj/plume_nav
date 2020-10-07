@@ -63,11 +63,15 @@ class Localization
 	double m_max_concentration_value;
 	double m_distance_from_waypoint;
 
+	/// \brief Heading angle
+	double m_heading_angle;
+
 	bool m_max_prob_message_received;
 	bool m_moving_to_source;
 	bool m_lost_plume;
 	bool m_raster_scan_complete;
 	bool m_initial_scan_complete;
+	bool m_got_initial_heuristic;
 
 	tf::TransformListener m_tf;
 
