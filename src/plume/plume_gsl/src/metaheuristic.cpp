@@ -127,15 +127,23 @@ double Localization::euclideanDistance(const geometry_msgs::Point& point1,
 		+ pow(point1.y - point2.y, 2)));
 }
 
+void Localization::getHeuristicMeta()
+{
+	std::default_random_engine generator;
+	std::normal_distribution<double> distribution(0.0, m_meta_std);
+	m_heading_angle = atan2(m_max_source_probability.y - m_drone.position.y,
+		m_max_source_probability.x - m_drone.position.x);
+	m_heading_angle += distribution(generator);
+	ROS_INFO("Choosing direction with respect to max probability. Angle = %.3lf degrees",
+		m_heading_angle * 180 / M_PI);
+}
+
 bool Localization::getInitialHeuristic()
 {
 	if (m_wind_dir_history.size() != m_wind_dir_history.maxSize())
 		return false;
 
 	ROS_INFO("Getting Initial Heuristic");
-
-	std::default_random_engine generator;
-	std::normal_distribution<double> distribution(0.0, m_meta_std);
 
 	switch (m_algorithm)
 	{
@@ -153,11 +161,7 @@ bool Localization::getInitialHeuristic()
 			break;
 
 		case METAHEURISTIC:
-			m_heading_angle = atan2(m_max_source_probability.y - m_drone.position.y,
-				m_max_source_probability.x - m_drone.position.x);
-			m_heading_angle += distribution(generator);
-			ROS_INFO("Choosing direction with respect to max probability. Angle = %.3lf degrees",
-				m_heading_angle * 180 / M_PI);
+			getHeuristicMeta();
 			break;
 
 		default:
@@ -170,7 +174,32 @@ bool Localization::getInitialHeuristic()
 
 void Localization::getNewHeuristic()
 {
+	switch (m_algorithm)
+	{
+		case UPWIND:
+			// Choose a random perpendicular-to-wind direction
+			if ((float) rand()/RAND_MAX >= 0.5)
+				m_heading_angle = (M_PI/2) + m_wind_dir_history.mean();
+			else
+				m_heading_angle = -(M_PI/2) + m_wind_dir_history.mean();
+			
+		case FOLLOW_WIND:
+			// Do nothing. Previous heading angle is used
+			break;
 
+		case ZIGZAG:
+			ROS_INFO("Changing zigzag direction");
+			m_alpha *= -1;
+			m_heading_angle = M_PI + m_wind_dir_history.mean() + m_alpha;
+			break;
+
+		case METAHEURISTIC:
+			getHeuristicMeta();
+			break;
+
+		default:
+			ROS_ERROR("Unable to get initial heuristic since no algorithm chosen");
+	}
 }
 
 void Localization::goToMaxConcentration()
