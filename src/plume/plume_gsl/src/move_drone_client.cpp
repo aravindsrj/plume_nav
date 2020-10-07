@@ -19,7 +19,7 @@ void MoveDroneClient::goToWaypoint(const geometry_msgs::Point &waypoint)
 
 void MoveDroneClient::followDirection(const double& heading)
 {
-    
+	// TODO If same heading angle as before, don't send new goal
 }
 
 // int main()

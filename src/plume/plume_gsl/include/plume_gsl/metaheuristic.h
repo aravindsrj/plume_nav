@@ -50,14 +50,15 @@ class Localization
 	geometry_msgs::Point m_previous_position;
 	olfaction_msgs::gas_sensor m_current_gas_concentration;
 	
-	unsigned int m_plume_lost_counter;
+	unsigned int m_lost_plume_counter;
+	unsigned int m_lost_plume_counter_maxlimit;
 	double m_waypoint_heading;
 
 	/// \brief Zigzag angle to be used in zigzag algorithm
 	double m_alpha;
 	double m_epsilon_position;
 	double m_epsilon_conc_grad;
-	double m_min_concentration;
+	double m_epsilon_concentration;
 	double m_probability_threshold;
 	double m_maintain_dir_prob;
 	double m_max_concentration_value;
@@ -72,6 +73,8 @@ class Localization
 	bool m_raster_scan_complete;
 	bool m_initial_scan_complete;
 	bool m_got_initial_heuristic;
+	bool m_source_reached;
+	bool m_reached_waypoint;
 
 	tf::TransformListener m_tf;
 
@@ -89,7 +92,7 @@ class Localization
 
 	void calcWaypointSlopeIntercept();
 
-	bool callRasterScan(const double &distance);
+	void callRasterScan(const double &distance);
 
 	void changeTemperature();
 

@@ -31,9 +31,6 @@ class MoveDroneClient
 	double m_waypoint_resolution;
 	double m_position_resolution;
 
-	bool m_has_reached_waypoint;
-	bool m_map_boundary_reached;
-
 	void dronePositionCallback(const nav_msgs::Odometry::ConstPtr& msg);
 
 	geometry_msgs::Point getDronePosition() const;
@@ -45,6 +42,8 @@ public:
 	geometry_msgs::Point position;
 
 	double drone_heading;
+
+	bool map_boundary_reached;
 	
 	MoveDroneClient();
 
