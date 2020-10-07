@@ -51,7 +51,9 @@ public:
 	geometry_msgs::Point generateWayPoint(const double &waypoint_heading);
 
 	void followDirection(const double &waypoint_heading, 
-		const std::shared_ptr<double> waypoint_res = {});
+		const std::shared_ptr<double> waypoint_res);
+
+	void followDirection(const double &waypoint_heading);
 
 	void goToWaypoint(const geometry_msgs::Point &waypoint);
 

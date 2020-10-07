@@ -17,6 +17,11 @@ void MoveDroneClient::goToWaypoint(const geometry_msgs::Point &waypoint)
     
 }
 
+void MoveDroneClient::followDirection(const double& heading)
+{
+    
+}
+
 // int main()
 // {
 //     return 0;
