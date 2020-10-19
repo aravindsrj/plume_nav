@@ -9,10 +9,11 @@ m_nh("~"),
 m_max_prob_message_received(false),
 m_lost_plume(false),
 m_moving_to_source(false),
-m_raster_scan_complete(false),
+m_in_raster_scan(false),
 m_initial_scan_complete(false),
 m_got_initial_heuristic(false),
 m_source_reached(false),
+m_record_gas_history(false),
 m_lost_plume_counter(0),
 m_max_concentration_value(-1),
 m_lost_plume_counter_maxlimit(3),
@@ -53,6 +54,8 @@ m_maintain_dir_prob(0.4)
 	m_nh.param("recent_concentration_queue_size", i_temp, 5);
 	m_concentration_points.setSize(i_temp);
 
+	m_concentration_history.setSize(100);
+
 	m_wind_sub = m_nh.subscribe("/Anemometer/WindSensor_reading", 
 		5, &Localization::windCallback, this);
 	m_gas_sub = m_nh.subscribe("/PID/Sensor_reading", 
@@ -63,11 +66,15 @@ m_maintain_dir_prob(0.4)
 	// Seed random number generator
 	std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
+	m_status = START;
+
 }
 
 void Localization::callRasterScan(const double& distance)
 {
-
+	m_in_raster_scan = true;
+	m_got_initial_heuristic = false;
+	m_concentration_history.clear();
 }
 
 void Localization::changeTemperature()
@@ -111,8 +118,9 @@ void Localization::concentrationCallback(const olfaction_msgs::gas_sensor::Const
 	}
 
 	// Updating the concentration history queue. This will be subsequently cleared in run()
-	// TODO The following append must happen only when raster and initial scans are complete
-	m_concentration_history.append(msg->raw);
+
+	if (m_record_gas_history)
+		m_concentration_history.append(msg->raw);
 }
 
 void Localization::declareSourceCondition()
@@ -248,134 +256,180 @@ void Localization::windCallback(const olfaction_msgs::anemometer::ConstPtr &msg)
 
 void Localization::run()
 {
+	if (m_drone.map_boundary_reached)
+		m_status = AT_MAP_BOUNDARY;
 
-	// First Steps ########################################################
-
-	// TODO Raster scan implementation
-
-	if (!m_got_initial_heuristic)
+	switch(m_status)
 	{
-		if (!getInitialHeuristic())
-		{
-			ROS_INFO_ONCE("Waiting to get initial heuristic");
-			return;
-		}
-		waypointResCalc();
-		m_drone.followDirection(m_heading_angle);
-		m_reached_waypoint = false;
-	}
+		case REACHED_SOURCE:
+			break;
 
-	// End of First steps #################################################
+		case START:
 
-	// TODO Give initial value for m_previous_position
-
-	m_distance_from_waypoint += euclideanDistance(m_drone.position, m_previous_position);
-	m_previous_position = m_drone.position;
-
-	// New way of checking if waypoint is reached
-	if ((*m_waypoint_res - m_distance_from_waypoint) < m_epsilon_position)
-	{
-		m_distance_from_waypoint = 0.0;
-		m_reached_waypoint = true;
-	}
-	else
-	{
-		return; // wait to reach the waypoint
-	}
-
-	// This gets executed each time a waypoint is reached
-	if (m_reached_waypoint and !m_source_reached)
-	{
-		if (m_lost_plume)
-		{
-			if (m_concentration_history.back() > m_epsilon_concentration)
+			if (m_algorithm == ZIGZAG)
 			{
-				declareSourceCondition();
-				
-				// This may have to be changed
-				m_lost_plume = false;
-			}
-			else
-			{
-				// TODO Call raster scan or any other recovery procedure
-				
-				return;
-			}
-		}
-
-		if (m_source_reached)
-			return;
-
-		// This may have to be moved from here
-		m_reached_waypoint = false;
-
-		double gradient = checkGradient();
-
-		if (gradient > m_epsilon_conc_grad)
-		{
-			// Continue with same heading
-			m_lost_plume_counter = 0;
-			changeTemperature();
-		}
-		else // Decreasing gradient
-		{
-			
-			// Change the maintain_dir_prob (lambda) value
-			if (m_algorithm == METAHEURISTIC)
-				m_maintain_dir_prob = pow(M_Ef32, (gradient-m_epsilon_conc_grad)/m_Temperature);
-
-			if (m_concentration_history.mean() < m_epsilon_concentration)
-			{
-				++m_lost_plume_counter;
-				if (m_lost_plume_counter < m_lost_plume_counter_maxlimit)
+				// TODO this might have to be changed
+				if (m_current_gas_concentration.raw > m_epsilon_concentration)
 				{
-					ROS_INFO("Concentration too low. Getting new heuristic");
-					getNewHeuristic();
+					// Zigzag algorithm does not need initial scan in this version
+					m_initial_scan_complete = true;
+					m_status = INCOMPLETE_INITIAL_HEURISTIC;
 				}
 				else
 				{
-					ROS_WARN("Plume lost due to low concentration");
-					m_lost_plume = true;
-					m_lost_plume_counter = 0;
-
-					// TODO Recovery procedure
-					
-					return;
+					ROS_INFO_ONCE("Concentration less than threshold");
+					break;
 				}
-			}
-			else if (m_maintain_dir_prob > (double)rand()/RAND_MAX)
-			{
-				m_lost_plume_counter = 0;
-
-				ROS_INFO("Maintaining direction probability");
-				if (m_algorithm == METAHEURISTIC)
-					ROS_INFO("Direction prob: %.3lf, Gradient: %.3lf", 
-						m_maintain_dir_prob, gradient);
-				
-				// keep same heading angle
-				changeTemperature();
 			}
 			else
 			{
-				m_lost_plume_counter = 0;
-
-				ROS_INFO("Low gradient. Getting new heuristic");
-				if (m_algorithm == METAHEURISTIC)
-					ROS_INFO("Direction prob: %.3lf, Gradient: %.3lf", 
-						m_maintain_dir_prob, gradient);
-				
-				getNewHeuristic();
+				callRasterScan(3.0);
+				m_status = IN_RASTER_SCAN;
 			}
-		}
-
-		// Calculate waypoint resolution and move
-		waypointResCalc();
-		m_drone.followDirection(m_heading_angle);
 		
-		m_concentration_history.clear();
+		case IN_RASTER_SCAN:
 
-		if (m_drone.map_boundary_reached)
-		{
+			if (m_in_raster_scan)
+				break; // Ongoing raster scan; do nothing
+
+			m_status = INCOMPLETE_INITIAL_HEURISTIC;
+			m_record_gas_history = true;			
+
+		case INCOMPLETE_INITIAL_HEURISTIC:
+
+			if (!getInitialHeuristic())
+			{
+				ROS_INFO_ONCE("Waiting to get initial heuristic");
+				break;
+			}
+			waypointResCalc();
+			m_drone.followDirection(m_heading_angle);
+			m_reached_waypoint = false;
+
+			m_previous_position = m_drone.position;
+
+			m_status = MOVING_TO_WAYPOINT;
+
+		case MOVING_TO_WAYPOINT:
+
+			m_distance_from_waypoint += euclideanDistance(m_drone.position, m_previous_position);
+
+			// New way of checking if waypoint is reached
+			if ((*m_waypoint_res - m_distance_from_waypoint) < m_epsilon_position)
+			{
+				m_distance_from_waypoint = 0.0;
+				m_reached_waypoint = true;
+				m_status = REACHED_WAYPOINT;
+			}
+			else
+			{
+				break; // wait to reach the waypoint
+			}
+
+		case REACHED_WAYPOINT:
+
+			if (m_reached_waypoint and !m_source_reached)
+			{
+				if (m_lost_plume)
+				{
+					if (m_concentration_history.back() > m_epsilon_concentration)
+					{
+						declareSourceCondition();
+						
+						// This may have to be changed
+						m_lost_plume = false;
+					}
+					else
+					{
+						// TODO Call raster scan or any other recovery procedure
+
+						// m_record_gas_history = false;
+						// m_concentration_history.clear();			
+						break;
+					}
+				}
+
+				if (m_source_reached)
+				{
+					m_status = REACHED_SOURCE;
+					m_record_gas_history = false;
+					break;
+				}
+					
+				// This may have to be moved from here
+				m_reached_waypoint = false;
+
+				double gradient = checkGradient();
+
+				if (gradient > m_epsilon_conc_grad)
+				{
+					// Continue with same heading
+					m_lost_plume_counter = 0;
+					changeTemperature();
+				}
+				else // Decreasing gradient
+				{
+					
+					// Change the maintain_dir_prob (lambda) value
+					if (m_algorithm == METAHEURISTIC)
+						m_maintain_dir_prob = pow(M_Ef32, (gradient-m_epsilon_conc_grad)/m_Temperature);
+
+					if (m_concentration_history.mean() < m_epsilon_concentration)
+					{
+						++m_lost_plume_counter;
+						if (m_lost_plume_counter < m_lost_plume_counter_maxlimit)
+						{
+							ROS_INFO("Concentration too low. Getting new heuristic");
+							getNewHeuristic();
+						}
+						else
+						{
+							ROS_WARN("Plume lost due to low concentration");
+							m_lost_plume = true;
+							m_lost_plume_counter = 0;
+
+							// TODO Recovery procedure
+							// m_record_history = false;
+							// m_concentration_history.clear();
+							break;
+						}
+					}
+					else if (m_maintain_dir_prob > (double)rand()/RAND_MAX)
+					{
+						m_lost_plume_counter = 0;
+
+						ROS_INFO("Maintaining direction probability");
+						if (m_algorithm == METAHEURISTIC)
+							ROS_INFO("Direction prob: %.3lf, Gradient: %.3lf", 
+								m_maintain_dir_prob, gradient);
+						
+						// keep same heading angle
+						changeTemperature();
+					}
+					else
+					{
+						m_lost_plume_counter = 0;
+
+						ROS_INFO("Low gradient. Getting new heuristic");
+						if (m_algorithm == METAHEURISTIC)
+							ROS_INFO("Direction prob: %.3lf, Gradient: %.3lf", 
+								m_maintain_dir_prob, gradient);
+						
+						getNewHeuristic();
+					}
+				}
+
+				// Calculate waypoint resolution and move
+				waypointResCalc();
+				m_drone.followDirection(m_heading_angle);
+				
+				m_concentration_history.clear();
+			}
+
+			m_status = MOVING_TO_WAYPOINT;
+
+		case AT_MAP_BOUNDARY:
+
 			ROS_INFO("Map boundary reached. Plume lost.");
 			m_lost_plume = true;
 
@@ -383,8 +437,15 @@ void Localization::run()
 			// This step can be changed
 			ROS_INFO("Going to max concentration point");
 			goToMaxConcentration();
-		}
+
+			m_status = MOVING_TO_WAYPOINT;
+
+		default:
+			ROS_ERROR("No valid case for algorithm status");
+
 	}
+
+	return;
 }
 
 int main(int argc, char **argv)

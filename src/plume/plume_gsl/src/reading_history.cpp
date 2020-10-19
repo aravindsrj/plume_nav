@@ -44,7 +44,6 @@ void ReadingHistory<double>::append(const double data)
 			m_array.pop_front();
 		}
 		
-		assert(m_sum >= 0);
 	}
 	assert(m_sum >= 0);
 }

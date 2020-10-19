@@ -25,6 +25,18 @@ enum Algorithm
 	METAHEURISTIC
 };
 
+enum RunStatus
+{
+	START,
+	INCOMPLETE_INITIAL_SCAN,
+	IN_RASTER_SCAN,
+	INCOMPLETE_INITIAL_HEURISTIC,
+	MOVING_TO_WAYPOINT,
+	REACHED_WAYPOINT,
+	REACHED_SOURCE,
+	AT_MAP_BOUNDARY
+};
+
 
 class Localization
 {
@@ -35,6 +47,7 @@ class Localization
 	ros::Subscriber m_prob_sub;
 	
 	Algorithm m_algorithm;
+	RunStatus m_status;
 	MoveDroneClient m_drone;
 
 	std::shared_ptr<double> m_waypoint_res;
@@ -70,11 +83,12 @@ class Localization
 	bool m_max_prob_message_received;
 	bool m_moving_to_source;
 	bool m_lost_plume;
-	bool m_raster_scan_complete;
+	bool m_in_raster_scan;
 	bool m_initial_scan_complete;
 	bool m_got_initial_heuristic;
 	bool m_source_reached;
 	bool m_reached_waypoint;
+	bool m_record_gas_history;
 
 	tf::TransformListener m_tf;
 
