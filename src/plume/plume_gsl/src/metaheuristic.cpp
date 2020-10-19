@@ -21,7 +21,6 @@ m_distance_from_waypoint(0.0),
 m_maintain_dir_prob(0.4)
 {
 	std::vector<double> temp_ranges;
-	double d_temp;
 	int i_temp;
 	
 	m_nh.param("waypoint_resolution_range", temp_ranges, std::vector<double>(1, 2.5));
@@ -30,8 +29,7 @@ m_maintain_dir_prob(0.4)
 	m_nh.param("concentration_range", temp_ranges, std::vector<double>(10.0, 200.0));
 	m_concentration_range.setRange(temp_ranges);
 
-	m_nh.param("waypoint_resolution", d_temp, 0.5);
-	m_waypoint_res = std::make_shared<double>(d_temp);
+	m_nh.param("waypoint_resolution", m_waypoint_res, 0.5);
 
 	m_nh.param("fixed_frame", m_fixed_frame, std::string("map"));
 	m_nh.param("anemometer_frame", m_anemo_frame, std::string("anemometer_frame"));
@@ -315,7 +313,7 @@ void Localization::run()
 			m_distance_from_waypoint += euclideanDistance(m_drone.position, m_previous_position);
 
 			// New way of checking if waypoint is reached
-			if ((*m_waypoint_res - m_distance_from_waypoint) < m_epsilon_position)
+			if ((m_waypoint_res - m_distance_from_waypoint) < m_epsilon_position)
 			{
 				m_distance_from_waypoint = 0.0;
 				m_reached_waypoint = true;

@@ -50,8 +50,6 @@ class Localization
 	RunStatus m_status;
 	MoveDroneClient m_drone;
 
-	std::shared_ptr<double> m_waypoint_res;
-
 	actionlib::SimpleActionClient<crazyflie_control::waypointAction> m_waypoint_client;
 	actionlib::SimpleActionClient<plume_gsl::rasterScanAction> m_raster_client;
 
@@ -76,6 +74,7 @@ class Localization
 	double m_maintain_dir_prob;
 	double m_max_concentration_value;
 	double m_distance_from_waypoint;
+	double m_waypoint_res;
 
 	/// \brief Heading angle
 	double m_heading_angle;
