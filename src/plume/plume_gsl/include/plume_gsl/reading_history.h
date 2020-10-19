@@ -24,7 +24,7 @@ public:
 	void pop();
 
 	/// \brief Return last appended value
-	double front() const;
+	double back() const;
 
 	/// \brief Find mean of the concentrations in the vector of pairs
 	double mean() const;

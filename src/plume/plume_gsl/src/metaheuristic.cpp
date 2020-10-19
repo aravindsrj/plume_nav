@@ -288,7 +288,7 @@ void Localization::run()
 	{
 		if (m_lost_plume)
 		{
-			if (m_concentration_history.front() > m_epsilon_concentration)
+			if (m_concentration_history.back() > m_epsilon_concentration)
 			{
 				declareSourceCondition();
 				

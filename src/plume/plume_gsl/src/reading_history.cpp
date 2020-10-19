@@ -56,9 +56,9 @@ void ReadingHistory<T>::pop()
 }
 
 template<>
-double ReadingHistory<double>::front() const
+double ReadingHistory<double>::back() const
 {
-	return m_array.front();
+	return m_array.back();
 }
 
 template<typename T>
