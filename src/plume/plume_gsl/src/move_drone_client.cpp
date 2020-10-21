@@ -6,6 +6,16 @@ void Range::setRange(const std::vector<double> ranges)
     max = ranges[1];
 }
 
+double MoveDroneClient::normalizeAngle(double angle)
+{
+	angle = fmod(angle, 2*M_PI);
+	angle = fmod(angle + 2*M_PI, 2*M_PI);
+	if (angle > M_PI)
+		angle -= 2*M_PI;
+  
+  return angle;
+}
+
 MoveDroneClient::MoveDroneClient() :
 m_action_client("waypoint")
 {

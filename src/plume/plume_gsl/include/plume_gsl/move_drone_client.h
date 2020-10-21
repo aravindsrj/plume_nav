@@ -47,6 +47,9 @@ public:
 	
 	MoveDroneClient();
 
+	/// \brief Clips the angle between -pi and pi
+	static double normalizeAngle(double);
+
 	geometry_msgs::Point generateWayPoint(const double &waypoint_heading);
 
 	void followDirection(const double &waypoint_heading, 

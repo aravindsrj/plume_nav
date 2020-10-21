@@ -130,9 +130,6 @@ class Localization
 
 	void maxSourceProbabilityCallback(const geometry_msgs::Point::ConstPtr &msg);
 
-	/// \brief Clips the angle between -pi and pi
-	void normalize_angle(double &angle) const;
-
 	void rasterDone();
 
 	/// \brief Calculate resolution of waypoint based on concentration readings
