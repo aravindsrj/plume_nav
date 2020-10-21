@@ -115,9 +115,6 @@ class Localization
 
 	void declareSourceCondition();
 
-	double euclideanDistance(const geometry_msgs::Point&,
-		const geometry_msgs::Point&) const;
-
 	void getHeuristicMeta();
 
 	bool getInitialHeuristic();

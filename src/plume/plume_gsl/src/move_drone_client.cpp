@@ -16,6 +16,13 @@ double MoveDroneClient::normalizeAngle(double angle)
   return angle;
 }
 
+double MoveDroneClient::euclideanDistance(const geometry_msgs::Point& point1,
+		const geometry_msgs::Point& point2)
+{
+  return (sqrt(pow(point1.x - point2.x, 2) 
+		+ pow(point1.y - point2.y, 2)));
+}
+
 MoveDroneClient::MoveDroneClient() :
 m_action_client("waypoint")
 {
