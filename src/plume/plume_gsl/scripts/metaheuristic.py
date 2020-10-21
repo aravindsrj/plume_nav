@@ -68,7 +68,7 @@ class Metaheuristic:
 
         self.listener = tf.TransformListener()
         self.fixed_frame = rospy.get_param("fixed_frame", "map")
-        self.anemo_frame = rospy.get_param("anemometer_frame","anemometer_framself.meta_stde")
+        self.anemo_frame = rospy.get_param("anemometer_frame","anemometer_frame")
 
         # Temperature parameter
         self.Temp = 14.00
@@ -154,25 +154,25 @@ class Metaheuristic:
             rospy.loginfo("Algorithm change to FOLLOW_WIND")
             self.algorithm = self.FOLLOW_WIND
 
-    def dronePositionCallback(self, msg):
-        self.drone_x = msg.pose.pose.position.x
-        self.drone_y = msg.pose.pose.position.y
-        rot_q = msg.pose.pose.orientation
-        _, _, self.drone_heading = euler_from_quaternion([rot_q.x, rot_q.y, rot_q.z, rot_q.w])
+    # def dronePositionCallback(self, msg):
+    #     self.drone_x = msg.pose.pose.position.x
+    #     self.drone_y = msg.pose.pose.position.y
+    #     rot_q = msg.pose.pose.orientation
+    #     _, _, self.drone_heading = euler_from_quaternion([rot_q.x, rot_q.y, rot_q.z, rot_q.w])
     
-    def followDirection(self):
-        rospy.loginfo("follow direction")
-        self.waypoint_x = self.waypoint_res * math.cos(self.waypoint_heading) + self.waypoint_x_prev
-        self.waypoint_y = self.waypoint_res * math.sin(self.waypoint_heading) + self.waypoint_y_prev
-        print("Waypoint", self.waypoint_x, self.waypoint_y)
+    # def followDirection(self):
+    #     rospy.loginfo("follow direction")
+    #     self.waypoint_x = self.waypoint_res * math.cos(self.waypoint_heading) + self.waypoint_x_prev
+    #     self.waypoint_y = self.waypoint_res * math.sin(self.waypoint_heading) + self.waypoint_y_prev
+    #     print("Waypoint", self.waypoint_x, self.waypoint_y)
 
-        if not self.xbounds.min < self.waypoint_x < self.xbounds.max \
-                or not self.ybounds.min < self.waypoint_y < self.ybounds.max:
-            rospy.logwarn("Map boundary reached. Max concentration found at (%f,%f)",self.max_conc_at.x, self.max_conc_at.y)
+    #     if not self.xbounds.min < self.waypoint_x < self.xbounds.max \
+    #             or not self.ybounds.min < self.waypoint_y < self.ybounds.max:
+    #         rospy.logwarn("Map boundary reached. Max concentration found at (%f,%f)",self.max_conc_at.x, self.max_conc_at.y)
 
-            self.moveToSource()        
+    #         self.moveToSource()        
 
-        self.sendWaypoint(self.waypoint_x,self.waypoint_y,self.waypoint_z)
+    #     self.sendWaypoint(self.waypoint_x,self.waypoint_y,self.waypoint_z)
 
     def getHeuristicMeta(self):
         message = '''Choosing a direction with respect to max source probability. 
@@ -279,11 +279,11 @@ class Metaheuristic:
             rospy.logerr("Raster Scan not completed. Status = %s"%status.text)
 
 
-    def sendWaypoint(self,x,y,z):
-        # Send waypoint and set has_reached_waypoint to false. Set this back to true when the feedback from server comes true
-        self.has_reached_waypoint = False
-        self.waypointGoal = waypointGoal([Point(x,y,z)])
-        self.waypoint_client.send_goal(self.waypointGoal, done_cb=self.actionDone)
+    # def sendWaypoint(self,x,y,z):
+    #     # Send waypoint and set has_reached_waypoint to false. Set this back to true when the feedback from server comes true
+    #     self.has_reached_waypoint = False
+    #     self.waypointGoal = waypointGoal([Point(x,y,z)])
+    #     self.waypoint_client.send_goal(self.waypointGoal, done_cb=self.actionDone)
 
     def waypointResCalc(self):
         try:
