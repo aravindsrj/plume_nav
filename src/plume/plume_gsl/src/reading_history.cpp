@@ -1,10 +1,11 @@
 #include "plume_gsl/reading_history.h"
 
 template<typename T>
-ReadingHistory<T>::ReadingHistory():
+ReadingHistory<T>::ReadingHistory(bool angle):
 m_sum(0.0),
 m_size(-1)
 {
+	m_angle = angle;
 }
 
 // Explicit instantiation
@@ -37,10 +38,10 @@ void ReadingHistory<double>::append(const double data)
 	m_array.push_back(data);
 	if (m_size != -1) // If the max_size variable is set
 	{
-		m_sum += data;
+		if (!m_angle) m_sum += data;
 		if (m_array.size() > m_size)
 		{
-			m_sum -= m_array[0];
+			if (!m_angle) m_sum -= m_array[0];
 			m_array.pop_front();
 		}
 		
@@ -48,16 +49,33 @@ void ReadingHistory<double>::append(const double data)
 	assert(m_sum >= 0);
 }
 
-template<typename T>
-void ReadingHistory<T>::pop()
-{
-	m_array.pop_front();
-}
-
 template<>
 double ReadingHistory<double>::back() const
 {
 	return m_array.back();
+}
+
+template<>
+double ReadingHistory<double>::mean() const
+{
+	if (m_angle)
+	{
+		double sines = 0.0, cosines = 0.0;
+		for (int i = 0; i < m_array.size(); ++i)
+		{
+			sines += sin(m_array[i]);
+			cosines += cos(m_array[i]);
+		}
+		return atan2(sines, cosines);
+	}
+
+	// The following assertion is required because m_sum will be calculated only
+	// if m_size is not equal to -1
+	assert(m_size >= 0 and !m_angle);
+
+	if (m_array.size() == 0)
+		throw "m_array is empty. Cannot find mean";
+	return m_sum/m_array.size();
 }
 
 template<typename T>

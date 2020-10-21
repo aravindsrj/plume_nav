@@ -156,15 +156,14 @@ bool Localization::getInitialHeuristic()
 		case UPWIND:
 		case FOLLOW_WIND:
 			ROS_INFO("Following wind");
-			m_heading_angle = M_PI + MoveDroneClient::normalizeAngle(m_wind_dir_history.mean());
+			m_heading_angle = M_PI + m_wind_dir_history.mean();
 			break;
 
 		case ZIGZAG:
 			ROS_INFO("Choosing zigzag direction");
 			if ((float) rand()/RAND_MAX >= 0.5)
 				m_alpha *= -1;
-			m_heading_angle = M_PI + MoveDroneClient::normalizeAngle(m_wind_dir_history.mean()) 
-				+ m_alpha;
+			m_heading_angle = M_PI + m_wind_dir_history.mean() + m_alpha;
 			break;
 
 		case METAHEURISTIC:
@@ -186,11 +185,9 @@ void Localization::getNewHeuristic()
 		case UPWIND:
 			// Choose a random perpendicular-to-wind direction
 			if ((float) rand()/RAND_MAX >= 0.5)
-				m_heading_angle = (M_PI/2) + 
-					MoveDroneClient::normalizeAngle(m_wind_dir_history.mean());
+				m_heading_angle = (M_PI/2) + m_wind_dir_history.mean();
 			else
-				m_heading_angle = -(M_PI/2) + 
-					MoveDroneClient::normalizeAngle(m_wind_dir_history.mean());
+				m_heading_angle = -(M_PI/2) + m_wind_dir_history.mean();
 			
 		case FOLLOW_WIND:
 			// Do nothing. Previous heading angle is used
@@ -199,8 +196,7 @@ void Localization::getNewHeuristic()
 		case ZIGZAG:
 			ROS_INFO("Changing zigzag direction");
 			m_alpha *= -1;
-			m_heading_angle = M_PI + 
-				MoveDroneClient::normalizeAngle(m_wind_dir_history.mean()) + m_alpha;
+			m_heading_angle = M_PI + m_wind_dir_history.mean() + m_alpha;
 			break;
 
 		case METAHEURISTIC:

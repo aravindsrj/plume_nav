@@ -101,7 +101,7 @@ class Localization
 
 	ReadingHistory<std::pair<double, geometry_msgs::Point>> m_concentration_points;
 	ReadingHistory<double> m_concentration_history;
-	ReadingHistory<double> m_wind_dir_history;
+	ReadingHistory<double> m_wind_dir_history{true};
 
 	void calcWaypointSlopeIntercept();
 
