@@ -56,4 +56,6 @@ public:
 
 	void goToWaypoint(const geometry_msgs::Point &waypoint);
 
+	void stopMoving();
+
 };
