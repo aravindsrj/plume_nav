@@ -33,6 +33,8 @@ void MoveDroneClient::goToWaypoint(const geometry_msgs::Point &waypoint)
 {
   // TODO if at map boundary while receiving waypoint, change map_boundary to false
 	// if heading is away from boundary
+
+  //TODO set reached_waypoint parameter to false while moving.
 }
 
 void MoveDroneClient::followDirection(const double& heading)
@@ -43,6 +45,11 @@ void MoveDroneClient::followDirection(const double& heading)
 void MoveDroneClient::stopMoving()
 {
 
+}
+
+bool MoveDroneClient::reachedWaypoint()
+{
+  return true;
 }
 
 // int main()
