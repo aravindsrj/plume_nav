@@ -124,12 +124,6 @@ void RasterSearch::concCallback(const olfaction_msgs::gas_sensor::ConstPtr& msg)
   // Updating the vector for recent concentrations. Automatically pops when size exceeds
 	m_concentration_points.append(std::make_pair(msg->raw, m_drone.position));
 
-  if(!m_wind_history_full)
-  {
-    if (m_concentration_points.size() == m_wind_history_size)
-      m_wind_history_full = true;
-  }
-
 	if (m_concentration_points.mean() > m_max_concentration_value)
 	{
 		m_max_concentration_value = m_concentration_points.mean();
@@ -151,6 +145,7 @@ void RasterSearch::goalCallback()
   m_wind_history_full = false;
   m_start_position = m_drone.position;
   m_movement = NOT_STARTED;
+  m_max_concentration_value = 0.0;
 }
 
 void RasterSearch::windCallback(const olfaction_msgs::anemometer::ConstPtr& msg)
@@ -168,6 +163,12 @@ void RasterSearch::windCallback(const olfaction_msgs::anemometer::ConstPtr& msg)
 
 	MoveDroneClient::normalizeAngle(m_wind_direction);
   m_wind_dir_history.append(m_wind_direction);
+
+  if(!m_wind_history_full)
+  {
+    if (m_wind_dir_history.size() == m_wind_history_size)
+      m_wind_history_full = true;
+  }
 }
 
 bool RasterSearch::flankScan()
