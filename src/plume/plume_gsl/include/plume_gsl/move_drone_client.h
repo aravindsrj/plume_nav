@@ -7,6 +7,9 @@
 #include "actionlib/client/terminal_state.h"
 
 #include "crazyflie_control/waypointAction.h"
+#include "crazyflie_control/follow_directionAction.h"
+
+#include "tf/tf.h"
 
 #pragma once
 
@@ -24,24 +27,32 @@ class MoveDroneClient
 	ros::NodeHandle m_nh;
 	ros::Subscriber m_pos_sub;
 
-	actionlib::SimpleActionClient<crazyflie_control::waypointAction> m_action_client;
+	actionlib::SimpleActionClient<crazyflie_control::follow_directionAction> m_action_client;
+	actionlib::SimpleActionClient<crazyflie_control::waypointAction> m_waypoint_client;
+	crazyflie_control::follow_directionGoal m_goal;
+	crazyflie_control::waypointGoal m_waypoint_goal;
 
 	Range m_xbounds, m_ybounds;
 
 	double m_waypoint_resolution;
 	double m_position_resolution;
+	double m_drone_heading;
+	double m_goal_heading;
+	double m_default_velocity;
+	double m_epsilon_angle;
 
+	bool m_reached_waypoint;
+	
 	void dronePositionCallback(const nav_msgs::Odometry::ConstPtr& msg);
 
-	geometry_msgs::Point getDronePosition() const;
+	void waypointDoneCallback(const actionlib::SimpleClientGoalState&,
+		const crazyflie_control::waypointResultConstPtr&);
 
 	void sendWaypoint(const geometry_msgs::Point &waypoint);
 
 public:
 
 	geometry_msgs::Point position;
-
-	double drone_heading;
 
 	bool map_boundary_reached;
 	
