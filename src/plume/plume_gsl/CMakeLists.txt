@@ -153,6 +153,22 @@ target_link_libraries(metaheuristic
   ${catkin_LIBRARIES}
 )
 
+add_executable(raster_search 
+  src/raster_search.cpp
+  src/reading_history.cpp
+  src/move_drone_client.cpp)
+add_dependencies(raster_search ${catkin_EXPORTED_TARGETS})
+target_link_libraries(raster_search
+  ${catkin_LIBRARIES}
+)
+
+# add_executable(testfile_raster
+#   src/testfile.cpp)
+# add_dependencies(testfile_raster ${catkin_EXPORTED_TARGETS})
+# target_link_libraries(testfile_raster
+#   ${catkin_LIBRARIES}
+# )
+
 # add_executable(move_drone_client src/move_drone_client.cpp)
 # add_dependencies(move_drone_client ${catkin_EXPORTED_TARGETS})
 # target_link_libraries(move_drone_client

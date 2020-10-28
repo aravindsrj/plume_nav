@@ -15,13 +15,14 @@ class ReadingHistory
 	/// \brief Records the sum of the elements in the array
 	double m_sum;
 
+	bool m_angle;
+
 public:
 	
-	ReadingHistory();
+	ReadingHistory(bool = false);
 	void setSize(const int& size);
 	void append(const std::pair<double, geometry_msgs::Point>);
 	void append(const double);
-	void pop();
 
 	/// \brief Return last appended value
 	double back() const;

@@ -101,7 +101,7 @@ class Localization
 
 	ReadingHistory<std::pair<double, geometry_msgs::Point>> m_concentration_points;
 	ReadingHistory<double> m_concentration_history;
-	ReadingHistory<double> m_wind_dir_history;
+	ReadingHistory<double> m_wind_dir_history{true};
 
 	void calcWaypointSlopeIntercept();
 
@@ -115,9 +115,6 @@ class Localization
 
 	void declareSourceCondition();
 
-	double euclideanDistance(const geometry_msgs::Point&,
-		const geometry_msgs::Point&) const;
-
 	void getHeuristicMeta();
 
 	bool getInitialHeuristic();
@@ -129,9 +126,6 @@ class Localization
 	void goToMaxConcentration();
 
 	void maxSourceProbabilityCallback(const geometry_msgs::Point::ConstPtr &msg);
-
-	/// \brief Clips the angle between -pi and pi
-	void normalize_angle(double &angle) const;
 
 	void rasterDone();
 

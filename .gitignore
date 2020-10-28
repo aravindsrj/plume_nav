@@ -68,3 +68,7 @@ gas_simulations/
 # Bagfiles and results
 /src/plume/plume_tools/bagfiles/*
 /src/plume/plume_tools/csvfiles/*
+
+# Testfiles
+**/testfile.*
+**/cpp_testing.launch

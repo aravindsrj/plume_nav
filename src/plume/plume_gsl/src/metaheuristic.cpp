@@ -126,13 +126,6 @@ void Localization::declareSourceCondition()
 
 }
 
-double Localization::euclideanDistance(const geometry_msgs::Point& point1,
-	const geometry_msgs::Point& point2) const
-{
-	return (sqrt(pow(point1.x - point2.x, 2) 
-		+ pow(point1.y - point2.y, 2)));
-}
-
 void Localization::getHeuristicMeta()
 {
 	std::default_random_engine generator;
@@ -221,14 +214,6 @@ void Localization::maxSourceProbabilityCallback(const geometry_msgs::Point::Cons
 		m_max_prob_message_received = true;
 }
 
-void Localization::normalize_angle(double& angle) const
-{
-	angle = fmod(angle, 2*M_PI);
-	angle = fmod(angle + 2*M_PI, 2*M_PI);
-	if (angle > M_PI)
-		angle -= 2*M_PI;
-}
-
 void Localization::waypointResCalc()
 {
 
@@ -246,7 +231,7 @@ void Localization::windCallback(const olfaction_msgs::anemometer::ConstPtr &msg)
 
 	double wind_dir = yaw + msg->wind_direction - M_PI;
 
-	normalize_angle(wind_dir);
+	MoveDroneClient::normalizeAngle(wind_dir);
 
 	m_wind_dir_history.append(wind_dir);
 
@@ -310,7 +295,8 @@ void Localization::run()
 
 		case MOVING_TO_WAYPOINT:
 
-			m_distance_from_waypoint += euclideanDistance(m_drone.position, m_previous_position);
+			m_distance_from_waypoint += 
+				MoveDroneClient::euclideanDistance(m_drone.position, m_previous_position);
 
 			// New way of checking if waypoint is reached
 			if ((m_waypoint_res - m_distance_from_waypoint) < m_epsilon_position)
