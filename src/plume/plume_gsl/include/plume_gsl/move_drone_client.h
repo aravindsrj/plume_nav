@@ -21,11 +21,12 @@ struct Range
 
 class MoveDroneClient
 {
+	std::shared_ptr<ros::NodeHandle> m_nh;
+
+	ros::Subscriber m_pos_sub;
+
 	geometry_msgs::Point m_waypoint_prev;
 	geometry_msgs::Point m_waypoint;
-
-	ros::NodeHandle m_nh;
-	ros::Subscriber m_pos_sub;
 
 	actionlib::SimpleActionClient<crazyflie_control::follow_directionAction> m_action_client;
 	actionlib::SimpleActionClient<crazyflie_control::waypointAction> m_waypoint_client;
@@ -42,6 +43,7 @@ class MoveDroneClient
 	double m_epsilon_angle;
 
 	bool m_reached_waypoint;
+	bool m_position_initialized;
 	
 	void dronePositionCallback(const nav_msgs::Odometry::ConstPtr& msg);
 
@@ -57,6 +59,8 @@ public:
 	bool map_boundary_reached;
 	
 	MoveDroneClient();
+
+	MoveDroneClient(ros::NodeHandle&);
 
 	/// \brief Clips the angle between -pi and pi
 	static double normalizeAngle(double);
@@ -75,6 +79,8 @@ public:
 
 	void stopMoving();
 
-	bool reachedWaypoint();
+	bool reachedWaypoint() const;
+
+	bool initialized() const;
 
 };

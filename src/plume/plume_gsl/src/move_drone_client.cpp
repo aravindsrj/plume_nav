@@ -26,7 +26,8 @@ double MoveDroneClient::euclideanDistance(const geometry_msgs::Point& point1,
 MoveDroneClient::MoveDroneClient():
 m_action_client("follow_direction",true),
 m_waypoint_client("waypoint", true),
-m_reached_waypoint(true)
+m_reached_waypoint(true),
+m_position_initialized(false)
 {
 	// Parameters
 	m_default_velocity = 1.0;
@@ -44,10 +45,38 @@ m_reached_waypoint(true)
 	}
 }
 
+MoveDroneClient::MoveDroneClient(ros::NodeHandle& nh):
+m_nh(std::make_shared<ros::NodeHandle>(nh)),
+m_action_client(nh, "follow_direction",true),
+m_waypoint_client(nh, "waypoint", true),
+m_reached_waypoint(true),
+m_position_initialized(false)
+{
+	// Parameters
+	m_default_velocity = 1.0;
+	
+	m_action_client.waitForServer(ros::Duration(10.0));
+	if (!m_action_client.isServerConnected())
+	{
+		ROS_ERROR("Move_drone_client did not connect to follow_direction server");
+	}
+
+	m_waypoint_client.waitForServer(ros::Duration(10.0));
+	if (!m_waypoint_client.isServerConnected())
+	{
+		ROS_ERROR("Move_drone_client did not connect to waypoint server");
+	}
+
+	m_pos_sub = m_nh->subscribe("/base_pose_ground_truth", 1, 
+		&MoveDroneClient::dronePositionCallback, this);
+}
+
 void MoveDroneClient::dronePositionCallback(const nav_msgs::Odometry::ConstPtr& msg)
 {
 	position = msg->pose.pose.position;
 	m_drone_heading = tf::getYaw(msg->pose.pose.orientation);
+	m_position_initialized = true;
+	// ROS_WARN("In drone position callback");
 }
 
 void MoveDroneClient::waypointDoneCallback(
@@ -59,8 +88,8 @@ void MoveDroneClient::waypointDoneCallback(
 		ROS_ERROR("Waypoint complete - error");
 		return;
 	}
-	ROS_INFO("Waypoint reached");
 	m_reached_waypoint = true;
+	ROS_INFO("Waypoint reached");
 }
 
 void MoveDroneClient::goToWaypoint(const geometry_msgs::Point &waypoint)
@@ -92,10 +121,20 @@ void MoveDroneClient::followDirection(const double& heading)
 
 void MoveDroneClient::stopMoving()
 {
+	m_goal.heading = m_goal_heading;
+	m_goal.velocity = 0;
+	if (m_action_client.sendGoalAndWait(m_goal, ros::Duration(1.0)) 
+			!= actionlib::SimpleClientGoalState::SUCCEEDED)
+		ROS_ERROR("Stop action not complete");
 
 }
 
-bool MoveDroneClient::reachedWaypoint()
+bool MoveDroneClient::reachedWaypoint() const
 {
   return m_reached_waypoint;
+}
+
+bool MoveDroneClient::initialized() const
+{
+	return m_position_initialized;
 }

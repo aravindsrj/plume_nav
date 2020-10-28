@@ -15,7 +15,8 @@ enum Movement
   NOT_STARTED,
   FIRST_FLANK,
   SECOND_FLANK,
-  STOPPED
+  STOPPED,
+  COMPLETED
 };
 
 class RasterSearch
@@ -27,6 +28,7 @@ class RasterSearch
 
   ros::Subscriber sub_sensor;
   ros::Subscriber sub_wind;
+  ros::Subscriber pos_sub;
 
   void concCallback(const olfaction_msgs::gas_sensor::ConstPtr&);
   void windCallback(const olfaction_msgs::anemometer::ConstPtr&);
@@ -63,6 +65,7 @@ class RasterSearch
   /// \brief A flag to check if enough wind data is collected
   bool m_wind_history_full;
   bool m_goal_point_sent;
+  bool m_drone_initialized;
 
   /// \brief A flag to know if the drone reached the extreme end of the flank,
   /// and is ready to move back to the start point
@@ -86,7 +89,9 @@ m_max_concentration_value(0.0),
 m_wind_history_full(false),
 m_end_reached(false),
 m_goal_point_sent(false),
-m_server(m_nh, "raster_scan", false)
+m_drone_initialized(false),
+m_server(m_nh, "raster_scan", false),
+m_drone(m_nh)
 {
   sub_sensor = m_nh.subscribe("/PID/Sensor_reading",5, 
     &RasterSearch::concCallback, this);
@@ -113,6 +118,10 @@ m_server(m_nh, "raster_scan", false)
 
   // TODO this parameter should be sampled from a uniform distribution
   m_alpha = 1;
+
+  // sub = m_nh.subscribe<nav_msgs::Odometry>("/base_pose_ground_truth",1, boost::bind(&MoveDroneClient::dronePositionCallback, this, _1));
+
+  m_server.start();
 }
 
 void RasterSearch::concCallback(const olfaction_msgs::gas_sensor::ConstPtr& msg)
@@ -143,7 +152,11 @@ void RasterSearch::goalCallback()
 
   // Re-initialize some variables
   m_wind_history_full = false;
-  m_start_position = m_drone.position;
+  if (m_drone.initialized())
+  {
+    m_drone_initialized = true;
+    m_start_position = m_drone.position;
+  }
   m_movement = NOT_STARTED;
   m_max_concentration_value = 0.0;
 }
@@ -175,10 +188,10 @@ bool RasterSearch::flankScan()
 {
   m_distance_from_start = 
     MoveDroneClient::euclideanDistance(m_drone.position, m_start_position);
-  
+  // ROS_WARN("Distance from start = %.2lf", m_distance_from_start);
   if (!m_end_reached) 
   { // Moving away from start point
-
+    // ROS_INFO("Not end reached. Distance from start = %.2lf", m_distance_from_start);
     m_drone.followDirection(m_heading);
     if (m_distance_from_start >= m_goal_distance)
       m_end_reached = true;
@@ -186,7 +199,7 @@ bool RasterSearch::flankScan()
 
   if (m_end_reached)  
   { // Moving towards start point
-    
+    // ROS_INFO("End reached");
     if (!m_goal_point_sent)
     {
       // This is where the start points are given as the waypoint
@@ -215,8 +228,22 @@ void RasterSearch::run()
 
   if (!m_wind_history_full)
   {
-    ROS_INFO("Collecting wind data");
+    ROS_INFO_ONCE("[Raster] Collecting wind data");
     return;
+  }
+
+  if (!m_drone_initialized)
+  {
+    if (m_drone.initialized())
+    {
+      m_start_position = m_drone.position;
+      m_drone_initialized = true;
+    }
+    else
+    {
+      ROS_INFO_ONCE("[Raster] Waiting for drone to initialize");
+      return;
+    }
   }
 
   switch (m_movement)
@@ -228,6 +255,7 @@ void RasterSearch::run()
       m_movement = FIRST_FLANK;
 
     case FIRST_FLANK:
+      ROS_INFO_ONCE("[Raster] First flank");
       if (flankScan())
       {
         // Go to next flank if first one is complete
@@ -239,7 +267,8 @@ void RasterSearch::run()
     case SECOND_FLANK:
       if (m_movement != SECOND_FLANK)
         break;
-
+      
+      ROS_INFO_ONCE("[Raster] Second flank");
       if (flankScan())
       {
         // Stop raster scan if both flanks are complete
@@ -248,17 +277,22 @@ void RasterSearch::run()
     case STOPPED:
       if (m_movement != STOPPED)
         break;
-      
+      ROS_INFO("[Raster] Stopped");
       m_action_result.max_concentration = m_max_concentration_value;
       
       m_action_result.max_concentration_point[0] = m_max_concentration_at.x;
       m_action_result.max_concentration_point[1] = m_max_concentration_at.y;
       m_action_result.max_concentration_point[2] = m_max_concentration_at.z;
 
+      m_drone.stopMoving();
+      m_movement = COMPLETED;
       m_server.setSucceeded(m_action_result);
 
+    case COMPLETED:
+      break;
+
     default:
-      ROS_ERROR("[Raster_search]: Invalid argument for switch case");
+      ROS_ERROR("[Raster]: Invalid argument for switch case");
       break;
   }
   
