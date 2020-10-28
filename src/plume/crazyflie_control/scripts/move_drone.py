@@ -55,8 +55,12 @@ class MoveDrone:
             v1y = math.sin(a)
             v2x = math.cos(b)
             v2y = math.sin(b)
-            
-            difference = dir*math.acos(v1x*v2x + v1y*v2y)
+            try:
+                difference = dir*math.acos(v1x*v2x + v1y*v2y)
+            except ValueError:
+                print(v1x*v2x + v1y*v2y)
+                print(v1x, v2x, v1y, v2y)
+                exit()
 
         return difference
 
