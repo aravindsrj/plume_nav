@@ -4,7 +4,7 @@
 
 Localization::Localization() :
 m_waypoint_client("waypoint"),
-m_raster_client("rasterScan"),
+m_raster_client("/raster_scan"),
 m_nh("~"),
 m_max_prob_message_received(false),
 m_lost_plume(false),
@@ -18,7 +18,8 @@ m_lost_plume_counter(0),
 m_max_concentration_value(-1),
 m_lost_plume_counter_maxlimit(3),
 m_distance_from_waypoint(0.0),
-m_maintain_dir_prob(0.4)
+m_maintain_dir_prob(0.4),
+m_drone(m_nh)
 {
 	std::vector<double> temp_ranges;
 	int i_temp;
@@ -64,12 +65,24 @@ m_maintain_dir_prob(0.4)
 	// Seed random number generator
 	std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
+	m_raster_client.waitForServer(ros::Duration(3.0));
+	ROS_ERROR_COND(!m_raster_client.isServerConnected(),
+		"Metaheuristic not connected to raster server");
+
+	m_algorithm = METAHEURISTIC;
+
 	m_status = START;
 
 }
 
 void Localization::callRasterScan(const double& distance)
 {
+	m_drone.stopMoving();
+
+	plume_gsl::rasterScanGoal goal;
+	goal.scan_distance = distance;
+	m_raster_client.sendGoal(goal, 
+		boost::bind(&Localization::rasterDone, this, _1, _2));
 	m_in_raster_scan = true;
 	m_got_initial_heuristic = false;
 	m_concentration_history.clear();
@@ -123,7 +136,8 @@ void Localization::concentrationCallback(const olfaction_msgs::gas_sensor::Const
 
 void Localization::declareSourceCondition()
 {
-
+	ROS_INFO("At declareSourceCondition");
+	m_drone.stopMoving();
 }
 
 void Localization::getHeuristicMeta()
@@ -214,6 +228,20 @@ void Localization::maxSourceProbabilityCallback(const geometry_msgs::Point::Cons
 		m_max_prob_message_received = true;
 }
 
+void Localization::rasterDone(const actionlib::SimpleClientGoalState& state,
+		const plume_gsl::rasterScanResultConstPtr& result)
+{
+	if (state.state_ == actionlib::SimpleClientGoalState::SUCCEEDED)
+	{
+		ROS_INFO("Raster scan complete");
+		m_in_raster_scan = false;
+	}
+	else
+	{
+		ROS_ERROR("Raster done, but not successful");
+	}
+}
+
 void Localization::waypointResCalc()
 {
 
@@ -248,7 +276,9 @@ void Localization::run()
 			break;
 
 		case START:
+			ROS_INFO("[Metaheuristic]: At START");
 
+			m_status = INCOMPLETE_INITIAL_HEURISTIC;
 			if (m_algorithm == ZIGZAG)
 			{
 				// TODO this might have to be changed
@@ -271,6 +301,7 @@ void Localization::run()
 			}
 		
 		case IN_RASTER_SCAN:
+			ROS_INFO_ONCE("[Metaheuristic]: At IN RASTER SCAN");
 
 			if (m_in_raster_scan)
 				break; // Ongoing raster scan; do nothing
@@ -326,9 +357,8 @@ void Localization::run()
 					else
 					{
 						// TODO Call raster scan or any other recovery procedure
-
-						// m_record_gas_history = false;
-						// m_concentration_history.clear();			
+						callRasterScan(2.0);
+						m_status = IN_RASTER_SCAN;
 						break;
 					}
 				}
@@ -373,8 +403,8 @@ void Localization::run()
 							m_lost_plume_counter = 0;
 
 							// TODO Recovery procedure
-							// m_record_history = false;
-							// m_concentration_history.clear();
+							callRasterScan(2.0);
+							m_status = IN_RASTER_SCAN;
 							break;
 						}
 					}

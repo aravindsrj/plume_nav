@@ -127,7 +127,8 @@ class Localization
 
 	void maxSourceProbabilityCallback(const geometry_msgs::Point::ConstPtr &msg);
 
-	void rasterDone();
+	void rasterDone(const actionlib::SimpleClientGoalState&,
+		const plume_gsl::rasterScanResultConstPtr&);
 
 	/// \brief Calculate resolution of waypoint based on concentration readings
 	void waypointResCalc();

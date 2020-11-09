@@ -47,8 +47,8 @@ m_position_initialized(false)
 
 MoveDroneClient::MoveDroneClient(ros::NodeHandle& nh):
 m_nh(std::make_shared<ros::NodeHandle>(nh)),
-m_action_client(nh, "follow_direction",true),
-m_waypoint_client(nh, "waypoint", true),
+m_action_client(nh, "/follow_direction",true),
+m_waypoint_client(nh, "/waypoint", true),
 m_reached_waypoint(true),
 m_position_initialized(false)
 {
