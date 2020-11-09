@@ -30,7 +30,7 @@ m_reached_waypoint(true),
 m_position_initialized(false)
 {
 	// Parameters
-	m_default_velocity = 1.0;
+	m_default_velocity = 0.5;
 	
 	m_action_client.waitForServer(ros::Duration(10.0));
 	if (!m_action_client.isServerConnected())
@@ -50,10 +50,11 @@ m_nh(std::make_shared<ros::NodeHandle>(nh)),
 m_action_client(nh, "/follow_direction",true),
 m_waypoint_client(nh, "/waypoint", true),
 m_reached_waypoint(true),
-m_position_initialized(false)
+m_position_initialized(false),
+map_boundary_reached(false)
 {
 	// Parameters
-	m_default_velocity = 1.0;
+	m_default_velocity = 0.5;
 	
 	m_action_client.waitForServer(ros::Duration(10.0));
 	if (!m_action_client.isServerConnected())
@@ -137,4 +138,12 @@ bool MoveDroneClient::reachedWaypoint() const
 bool MoveDroneClient::initialized() const
 {
 	return m_position_initialized;
+}
+
+bool MoveDroneClient::isMoving() const
+{
+	if (m_goal.velocity == 0)
+		return false;
+	else
+		return true;	
 }

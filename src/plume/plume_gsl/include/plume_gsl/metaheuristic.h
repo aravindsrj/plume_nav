@@ -63,6 +63,10 @@ class Localization
 	
 	unsigned int m_lost_plume_counter;
 	unsigned int m_lost_plume_counter_maxlimit;
+
+	/// \brief Number of concentration readings required to calculate gradient
+	int m_min_concentration_readings;
+
 	double m_waypoint_heading;
 
 	/// \brief Zigzag angle to be used in zigzag algorithm
@@ -87,7 +91,6 @@ class Localization
 	bool m_got_initial_heuristic;
 	bool m_source_reached;
 	bool m_reached_waypoint;
-	bool m_record_gas_history;
 
 	tf::TransformListener m_tf;
 
@@ -99,7 +102,11 @@ class Localization
 	double m_meta_std;
 	double m_lost_distance;
 
+	/// \brief This is used to average to find max concentration, and the location of  max
+	/// concentration
 	ReadingHistory<std::pair<double, geometry_msgs::Point>> m_concentration_points;
+
+	/// \brief Records history of concentration, used to calculate gradient
 	ReadingHistory<double> m_concentration_history;
 	ReadingHistory<double> m_wind_dir_history{true};
 

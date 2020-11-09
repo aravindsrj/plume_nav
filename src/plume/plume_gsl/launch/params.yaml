@@ -1,0 +1,7 @@
+concentration_range: [1, 1000]
+
+waypoint_resolution_range: [1, 2.5]
+
+min_number_of_conc_readings: 3
+
+waypoint_resolution: 0.5

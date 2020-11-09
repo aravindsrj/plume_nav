@@ -19,6 +19,8 @@ class ReadingHistory
 
 public:
 	
+	/// \brief in: whether the recorded readings are angular values. If so,
+	/// additional processing must be done.
 	ReadingHistory(bool = false);
 	void setSize(const int& size);
 	void append(const std::pair<double, geometry_msgs::Point>);
@@ -43,4 +45,8 @@ public:
 	void clear();
 
 	geometry_msgs::Point getPoint() const;
+
+	void printData() const;
+
+	bool isFull() const;
 };

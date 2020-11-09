@@ -18,7 +18,7 @@
 
     <node pkg="plume_gsl" type="source_from_map.py" name="source_from_map"/>
     <!-- <node pkg="rqt_plot" type="rqt_plot" name="Concentration" args="/PID/Sensor_reading/raw"/> -->
-    <node pkg="rosbag" type="record" name="rosbagger" args="record -o $(find plume_tools)/bagfiles/ /base_pose_ground_truth /PID/Sensor_reading /Anemometer/WindSensor_reading /max_probability"/>
+    <!-- <node pkg="rosbag" type="record" name="rosbagger" args="record -o $(find plume_tools)/bagfiles/ /base_pose_ground_truth /PID/Sensor_reading /Anemometer/WindSensor_reading /max_probability"/> -->
     
     <!-- The robot starts moving to this point. -->
     <!-- Comment this line to prevent the robot motion -->

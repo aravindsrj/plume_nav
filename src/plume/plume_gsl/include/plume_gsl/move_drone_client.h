@@ -83,4 +83,6 @@ public:
 
 	bool initialized() const;
 
+	bool isMoving() const;
+
 };
