@@ -107,7 +107,7 @@ void FollowDirection::publishVelocity()
   }
 
   // If there is angle difference, stop moving, and start turning
-  if (fabs(m_goal_heading - m_states.theta) > m_epslion_angle)
+  if (fabs(angularDifference(m_goal_heading, m_states.theta)) > m_epslion_angle)
   {
     m_vel_msg.linear.x = 0;
     m_vel_msg.angular.z = m_gain_angular * angularDifference(m_states.theta, m_goal_heading);
