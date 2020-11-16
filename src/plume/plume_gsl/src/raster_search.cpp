@@ -226,29 +226,28 @@ void RasterSearch::run()
   if (!m_server.isActive())
     return;
 
-  if (!m_wind_history_full)
-  {
-    ROS_INFO_ONCE("[Raster] Collecting wind data");
-    return;
-  }
-
-  if (!m_drone_initialized)
-  {
-    if (m_drone.initialized())
-    {
-      m_start_position = m_drone.position;
-      m_drone_initialized = true;
-    }
-    else
-    {
-      ROS_INFO_ONCE("[Raster] Waiting for drone to initialize");
-      return;
-    }
-  }
-
   switch (m_movement)
   {
     case NOT_STARTED:
+      if (!m_wind_history_full)
+      {
+        ROS_INFO_ONCE("[Raster] Collecting wind data");
+        return;
+      }
+
+      if (!m_drone_initialized)
+      {
+        if (m_drone.initialized())
+        {
+          m_start_position = m_drone.position;
+          m_drone_initialized = true;
+        }
+        else
+        {
+          ROS_INFO_ONCE("[Raster] Waiting for drone to initialize");
+          return;
+        }
+      }
 
       // Get heading direction perpendicular to wind
       m_heading = m_wind_dir_history.mean() + m_alpha * M_PI/2;
