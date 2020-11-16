@@ -66,6 +66,7 @@ m_action_client(nh, "/follow_direction",true),
 m_waypoint_client(nh, "/waypoint", true),
 m_reached_waypoint(true),
 m_position_initialized(false),
+m_epsilon_angle(5e-2),
 map_boundary_reached(false)
 {
 	// Parameters
