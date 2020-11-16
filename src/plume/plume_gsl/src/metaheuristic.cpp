@@ -1,7 +1,7 @@
 #include "plume_gsl/metaheuristic.h"
 #include <random>
 
-#define debug 0
+#define DEBUG 1
 
 Localization::Localization() :
 m_waypoint_client("waypoint"),
@@ -30,12 +30,8 @@ m_drone(m_nh)
 	m_nh.getParam("concentration_range", temp_ranges);
 	m_concentration_range.setRange(temp_ranges);
 
-	#if debug
-	ROS_INFO("Min value: %lf", m_concentration_range.min);
-	#endif
-
 	m_nh.param("waypoint_resolution", m_waypoint_res, 0.5);
-	#if debug
+	#if DEBUG
 	ROS_INFO("Waypoint resolution default: %.2lf", m_waypoint_res);
 	#endif
 
@@ -82,10 +78,9 @@ m_drone(m_nh)
 	m_algorithm = METAHEURISTIC;
 
 	m_status = START;
-
-	#if debug
-		ROS_WARN("End of constructor");
-	#endif
+	low_grad = false;
+	m_prev_distance = -1;
+	m_distance_counter = 0;
 }
 
 void Localization::callRasterScan(const double& distance)
@@ -123,8 +118,8 @@ double Localization::checkGradient() const
 		ROS_WARN("[Metaheuristic]: Concentration data not long enough");
 	}
 
-	#if debug
-		m_concentration_history.printData();
+	#if DEBUG
+		// m_concentration_history.printData();
 	#endif
 
 	double gradient = m_concentration_history.mean(L/2, L) - m_concentration_history.mean(0,L/2);
@@ -165,6 +160,10 @@ void Localization::getHeuristicMeta()
 	m_heading_angle += distribution(generator);
 	ROS_INFO("Choosing direction with respect to max probability. Angle = %.3lf degrees",
 		m_heading_angle * 180 / M_PI);
+	#if DEBUG
+		// ROS_WARN("End of getHeuristicMeta");
+	#endif
+	return;
 }
 
 bool Localization::getInitialHeuristic()
@@ -198,6 +197,9 @@ bool Localization::getInitialHeuristic()
 			return false;
 	}
 	m_got_initial_heuristic = true;
+	#if DEBUG
+		// ROS_WARN("Got new heuristic");
+	#endif
 	return true;
 }
 
@@ -229,6 +231,10 @@ void Localization::getNewHeuristic()
 		default:
 			ROS_ERROR("Unable to get initial heuristic since no algorithm chosen");
 	}
+	#if DEBUG
+		// ROS_WARN("Got new heuristic");
+	#endif
+	return;
 }
 
 void Localization::goToMaxConcentration()
@@ -261,6 +267,7 @@ void Localization::rasterDone(const actionlib::SimpleClientGoalState& state,
 void Localization::waypointResCalc()
 {
 	// TODO
+	return;
 }
 
 void Localization::windCallback(const olfaction_msgs::anemometer::ConstPtr &msg)
@@ -296,8 +303,8 @@ void Localization::run()
 
 			m_status = INCOMPLETE_INITIAL_HEURISTIC;
 
-			#if debug
-			break;
+			#if DEBUG
+			// break; // Skip initial raster scan
 			#endif
 
 			if (m_algorithm == ZIGZAG)
@@ -337,6 +344,7 @@ void Localization::run()
 				ROS_INFO_ONCE("[Metaheuristic]: Waiting to get initial heuristic");
 				break;
 			}
+			ROS_INFO("Got initial heuristic");
 
 			if (m_concentration_history.size() < 2)
 			{
@@ -345,6 +353,7 @@ void Localization::run()
 			}
 			waypointResCalc();
 			m_drone.followDirection(m_heading_angle);
+			low_grad = true;
 			m_reached_waypoint = false;
 
 			m_previous_position = m_drone.position;
@@ -357,6 +366,30 @@ void Localization::run()
 
 			m_distance_from_waypoint = 
 				MoveDroneClient::euclideanDistance(m_drone.position, m_previous_position);
+
+			#if DEBUG
+			if (low_grad)
+			{
+				// ROS_WARN("Distance from waypoint %.2f", m_distance_from_waypoint);
+				ROS_ASSERT(m_drone.isMoving());
+				if (m_prev_distance == m_distance_from_waypoint)
+				{
+					m_distance_counter++;
+					if (m_distance_counter > 100)
+					{
+						m_drone.followDirection(m_heading_angle);
+						m_distance_counter = 0;
+						ROS_WARN("Distance counter reset");
+					}
+				}
+				else
+				{
+					m_distance_counter = 0;
+				}
+
+			}
+			#endif
+			m_prev_distance = m_distance_from_waypoint;
 
 			// New way of checking if waypoint is reached
 			if ((m_waypoint_res - m_distance_from_waypoint) < m_epsilon_position)
@@ -380,6 +413,8 @@ void Localization::run()
 				m_drone.stopMoving();
 				break;
 			}
+
+			low_grad = false;
 
 			ROS_INFO("[Metaheuristic]: At REACHED_WAYPOINT. Conc = %.3lf", 
 				m_concentration_history.back());
@@ -436,6 +471,7 @@ void Localization::run()
 						{
 							ROS_WARN("[Metaheuristic]: Concentration too low. Getting new heuristic");
 							getNewHeuristic();
+							low_grad = true;
 						}
 						else
 						{
@@ -464,6 +500,7 @@ void Localization::run()
 					else
 					{
 						m_lost_plume_counter = 0;
+						low_grad = true;
 
 						ROS_WARN("[Metaheuristic]: Low gradient. Getting new heuristic");
 						if (m_algorithm == METAHEURISTIC)
@@ -473,12 +510,39 @@ void Localization::run()
 						getNewHeuristic();
 					}
 				}
-
+				#if DEBUG
+				// ROS_WARN("I am here");
+				#endif
 				// Calculate waypoint resolution and move
 				waypointResCalc();
+				#if DEBUG
+				ROS_WARN("End of waypoint res calc");
+				#endif
 				m_drone.followDirection(m_heading_angle);
+				#if DEBUG
+				ROS_WARN("End of follow direction");
+				#endif
+				#if DEBUG
+				// ROS_WARN("I am here 2");
+				
+				// if (low_grad)
+				// {
+				// 	if (m_drone.isMoving())
+				// 		ROS_INFO("Drone moving");
+				// 	else
+				// 	{
+				// 		ROS_INFO("Drone not moving");
+				// 	}
+					
+				// }
+				#endif
+
+				ROS_ASSERT(m_drone.isMoving());
 				
 				m_concentration_history.clear();
+				#if DEBUG
+				ROS_WARN("Concentration history cleared");
+				#endif
 			}
 			else // Source reached
 			{
@@ -487,6 +551,9 @@ void Localization::run()
 			
 
 			m_status = MOVING_TO_WAYPOINT;
+			#if DEBUG
+				ROS_WARN("m_status changed");
+			#endif
 			break;
 
 		case AT_MAP_BOUNDARY:

@@ -70,6 +70,8 @@ map_boundary_reached(false)
 
 	m_pos_sub = m_nh->subscribe("/base_pose_ground_truth", 1, 
 		&MoveDroneClient::dronePositionCallback, this);
+
+	m_goal.velocity = 0;
 }
 
 void MoveDroneClient::dronePositionCallback(const nav_msgs::Odometry::ConstPtr& msg)
@@ -107,7 +109,7 @@ void MoveDroneClient::goToWaypoint(const geometry_msgs::Point &waypoint)
 
 void MoveDroneClient::followDirection(const double& heading)
 {
-	if (fabs(heading-m_drone_heading) < m_epsilon_angle)
+	if (fabs(heading-m_drone_heading) < m_epsilon_angle && m_goal.velocity != 0)
 		return;
 
 	m_goal_heading = heading;
@@ -115,9 +117,11 @@ void MoveDroneClient::followDirection(const double& heading)
 	m_goal.velocity = m_default_velocity;
 
 	// Send goal and check if successful
-	if (m_action_client.sendGoalAndWait(m_goal, ros::Duration(1.0)) 
-			!= actionlib::SimpleClientGoalState::SUCCEEDED)
-		ROS_ERROR("Follow_direction action not complete");
+	// if (m_action_client.sendGoalAndWait(m_goal, ros::Duration(1.0)) 
+	// 		!= actionlib::SimpleClientGoalState::SUCCEEDED)
+	// 	ROS_ERROR("Follow_direction action not complete");
+	m_action_client.sendGoal(m_goal);
+	return;
 }
 
 void MoveDroneClient::stopMoving()

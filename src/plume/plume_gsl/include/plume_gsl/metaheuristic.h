@@ -63,6 +63,7 @@ class Localization
 	
 	unsigned int m_lost_plume_counter;
 	unsigned int m_lost_plume_counter_maxlimit;
+	unsigned int m_distance_counter;
 
 	/// \brief Number of concentration readings required to calculate gradient
 	int m_min_concentration_readings;
@@ -79,6 +80,7 @@ class Localization
 	double m_max_concentration_value;
 	double m_distance_from_waypoint;
 	double m_waypoint_res;
+	double m_prev_distance;
 
 	/// \brief Heading angle
 	double m_heading_angle;
@@ -91,6 +93,7 @@ class Localization
 	bool m_got_initial_heuristic;
 	bool m_source_reached;
 	bool m_reached_waypoint;
+	bool low_grad;
 
 	tf::TransformListener m_tf;
 

@@ -46,7 +46,7 @@ public:
 FollowDirection::FollowDirection():
 m_goal_velocity(0.0),
 m_gain_angular(3.0),
-m_epslion_angle(5e-3),
+m_epslion_angle(5e-2),
 m_server(nh, "follow_direction", false)
 {
   m_pos_sub = nh.subscribe("/base_pose_ground_truth", 10, &FollowDirection::posCallback, this);
@@ -64,6 +64,8 @@ void FollowDirection::goalCallback()
   
   m_goal_velocity = goal->velocity;
   m_goal_heading = goal->heading;
+
+  ROS_WARN("Goal velocity: %f; Heading: %f", m_goal_velocity, m_goal_heading);
 }
 
 void FollowDirection::posCallback(const nav_msgs::Odometry::ConstPtr& msg)
