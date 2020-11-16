@@ -68,6 +68,8 @@ public:
 	static double euclideanDistance(const geometry_msgs::Point&,
 		const geometry_msgs::Point&);
 
+	static double angularDifference(const double&, const double&);
+
 	geometry_msgs::Point generateWayPoint(const double &waypoint_heading);
 
 	void followDirection(const double &waypoint_heading, 

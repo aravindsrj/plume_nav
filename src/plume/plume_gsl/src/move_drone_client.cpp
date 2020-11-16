@@ -23,6 +23,21 @@ double MoveDroneClient::euclideanDistance(const geometry_msgs::Point& point1,
 		+ pow(point1.y - point2.y, 2)));
 }
 
+double MoveDroneClient::angularDifference(const double& a, const double& b)
+{
+  if (a == b)
+    return 0.0;
+
+  double diff = b - a;
+  double dir = fabs(diff)/diff;
+
+  if (diff > M_PI or diff < -M_PI)
+    dir *= -1;
+
+  return dir * acos( cos(a)*cos(b) + sin(a)*sin(b) );
+
+}
+
 MoveDroneClient::MoveDroneClient():
 m_action_client("follow_direction",true),
 m_waypoint_client("waypoint", true),
@@ -109,7 +124,8 @@ void MoveDroneClient::goToWaypoint(const geometry_msgs::Point &waypoint)
 
 void MoveDroneClient::followDirection(const double& heading)
 {
-	if (fabs(heading-m_drone_heading) < m_epsilon_angle && m_goal.velocity != 0)
+	if (fabs(MoveDroneClient::angularDifference(heading,m_drone_heading)) < m_epsilon_angle 
+		&& m_goal.velocity == m_default_velocity)
 		return;
 
 	m_goal_heading = heading;
@@ -126,6 +142,8 @@ void MoveDroneClient::followDirection(const double& heading)
 
 void MoveDroneClient::stopMoving()
 {
+	if (m_goal.velocity == 0)
+		return;
 	m_goal.heading = m_goal_heading;
 	m_goal.velocity = 0;
 	if (m_action_client.sendGoalAndWait(m_goal, ros::Duration(1.0)) 
