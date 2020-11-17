@@ -68,6 +68,7 @@ public:
 	static double euclideanDistance(const geometry_msgs::Point&,
 		const geometry_msgs::Point&);
 
+	/// \brief Returns the shortest difference between two angles
 	static double angularDifference(const double&, const double&);
 
 	geometry_msgs::Point generateWayPoint(const double &waypoint_heading);

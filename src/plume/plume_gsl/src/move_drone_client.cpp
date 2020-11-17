@@ -134,10 +134,10 @@ void MoveDroneClient::followDirection(const double& heading)
 	m_goal.velocity = m_default_velocity;
 
 	// Send goal and check if successful
-	// if (m_action_client.sendGoalAndWait(m_goal, ros::Duration(1.0)) 
-	// 		!= actionlib::SimpleClientGoalState::SUCCEEDED)
-	// 	ROS_ERROR("Follow_direction action not complete");
-	m_action_client.sendGoal(m_goal);
+	if (m_action_client.sendGoalAndWait(m_goal, ros::Duration(2.0)) 
+			!= actionlib::SimpleClientGoalState::SUCCEEDED)
+		ROS_ERROR("Follow_direction action not complete");
+	// m_action_client.sendGoal(m_goal);
 	return;
 }
 
