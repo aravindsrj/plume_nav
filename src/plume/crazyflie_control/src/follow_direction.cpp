@@ -65,7 +65,7 @@ void FollowDirection::goalCallback()
   m_goal_velocity = goal->velocity;
   m_goal_heading = goal->heading;
 
-  ROS_WARN("Goal velocity: %f; Heading: %f", m_goal_velocity, m_goal_heading);
+  // ROS_WARN("Goal velocity: %f; Heading: %f", m_goal_velocity, m_goal_heading);
 }
 
 void FollowDirection::posCallback(const nav_msgs::Odometry::ConstPtr& msg)
@@ -125,7 +125,7 @@ void FollowDirection::publishVelocity()
   // If action is waiting to be completed
   if (m_server.isActive())
   {
-    if (fabs(m_goal_heading - m_states.theta) <= m_epslion_angle 
+    if (fabs(angularDifference(m_goal_heading, m_states.theta)) <= m_epslion_angle 
       and m_vel_msg.linear.x == m_goal_velocity)
     {
       m_server.setSucceeded();
