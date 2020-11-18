@@ -123,8 +123,9 @@ void MoveDroneClient::goToWaypoint(const geometry_msgs::Point &waypoint)
 	m_reached_waypoint = false;
 }
 
-void MoveDroneClient::followDirection(const double& heading)
+void MoveDroneClient::followDirection(double heading)
 {
+	heading = normalizeAngle(heading);
 	if (fabs(MoveDroneClient::angularDifference(heading,m_drone_heading)) < m_epsilon_angle 
 		&& m_goal.velocity == m_default_velocity)
 		return;
@@ -147,9 +148,10 @@ void MoveDroneClient::stopMoving()
 		return;
 	m_goal.heading = m_goal_heading;
 	m_goal.velocity = 0;
-	if (m_action_client.sendGoalAndWait(m_goal, ros::Duration(1.0)) 
-			!= actionlib::SimpleClientGoalState::SUCCEEDED)
-		ROS_ERROR("Stop action not complete");
+	// if (m_action_client.sendGoalAndWait(m_goal, ros::Duration(1.0)) 
+	// 		!= actionlib::SimpleClientGoalState::SUCCEEDED)
+	// 	ROS_ERROR("Stop action not complete");
+	m_action_client.sendGoal(m_goal);
 
 }
 
