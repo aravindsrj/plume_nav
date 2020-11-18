@@ -38,28 +38,6 @@ double MoveDroneClient::angularDifference(const double& a, const double& b)
 
 }
 
-MoveDroneClient::MoveDroneClient():
-m_action_client("follow_direction",true),
-m_waypoint_client("waypoint", true),
-m_reached_waypoint(true),
-m_position_initialized(false)
-{
-	// Parameters
-	m_default_velocity = 0.5;
-	
-	m_action_client.waitForServer(ros::Duration(10.0));
-	if (!m_action_client.isServerConnected())
-	{
-		ROS_ERROR("Move_drone_client did not connect to follow_direction server");
-	}
-
-	m_waypoint_client.waitForServer(ros::Duration(10.0));
-	if (!m_waypoint_client.isServerConnected())
-	{
-		ROS_ERROR("Move_drone_client did not connect to waypoint server");
-	}
-}
-
 MoveDroneClient::MoveDroneClient(ros::NodeHandle& nh):
 m_nh(std::make_shared<ros::NodeHandle>(nh)),
 m_action_client(nh, "/follow_direction",true),

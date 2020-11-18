@@ -58,10 +58,6 @@ public:
 
 	geometry_msgs::Point position;
 
-	bool map_boundary_reached;
-	
-	MoveDroneClient();
-
 	MoveDroneClient(ros::NodeHandle&);
 
 	/// \brief Clips the angle between -pi and pi
