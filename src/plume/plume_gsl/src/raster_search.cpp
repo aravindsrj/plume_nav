@@ -15,6 +15,7 @@ enum Movement
   NOT_STARTED,
   FIRST_FLANK,
   SECOND_FLANK,
+  MAX_CONCENTRATION,
   STOPPED,
   COMPLETED
 };
@@ -271,8 +272,24 @@ void RasterSearch::run()
       if (flankScan())
       {
         // Stop raster scan if both flanks are complete
+        m_movement = MAX_CONCENTRATION;
+      }
+
+    case MAX_CONCENTRATION:
+      if (m_movement != MAX_CONCENTRATION)
+        break;
+      ROS_INFO_ONCE("Moving to max concentration");
+      if (!m_goal_point_sent)
+      {
+        m_drone.goToWaypoint(m_max_concentration_at);
+        m_goal_point_sent = true;
+      }
+      if (m_drone.reachedWaypoint() and m_goal_point_sent)
+      {
+        m_goal_point_sent = false;
         m_movement = STOPPED;
       }
+      break;
     case STOPPED:
       if (m_movement != STOPPED)
         break;
