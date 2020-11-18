@@ -9,6 +9,7 @@ m_size(-1)
 }
 
 // Explicit instantiation
+
 template class ReadingHistory<double>;
 template class ReadingHistory<std::pair<double, geometry_msgs::Point>>;
 
@@ -135,4 +136,37 @@ void ReadingHistory<T>::clear()
 {
 	m_array.clear();
 	m_sum = 0.0;
+}
+
+template<>
+void ReadingHistory<std::pair<double,geometry_msgs::Point>>::printData() const
+{
+	std::cout << "Reading history: [";
+	for (int i = 0; i < m_array.size(); ++i)
+	{
+		std::cout << m_array[i].first << ",";
+	}
+	std::cout << "]\n";
+}
+
+template<>
+void ReadingHistory<double>::printData() const
+{
+	std::cout << "Reading history: [";
+	for (int i = 0; i < m_array.size(); ++i)
+	{
+		std::cout << m_array[i] << ",";
+	}
+	std::cout << "]\n";
+}
+
+// TODO Not used anywhere at the moment
+template<typename T>
+bool ReadingHistory<T>::isFull() const
+{
+	assert(m_size > -1);
+	if (m_size == m_array.size())
+		return true;
+	else
+		return false;
 }

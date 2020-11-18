@@ -35,6 +35,7 @@ class MoveDroneClient
 
 	Range m_xbounds, m_ybounds;
 
+	double m_map_boundary_threshold;
 	double m_waypoint_resolution;
 	double m_position_resolution;
 	double m_drone_heading;
@@ -44,6 +45,7 @@ class MoveDroneClient
 
 	bool m_reached_waypoint;
 	bool m_position_initialized;
+	bool m_map_boundary_reached;
 	
 	void dronePositionCallback(const nav_msgs::Odometry::ConstPtr& msg);
 
@@ -56,10 +58,6 @@ public:
 
 	geometry_msgs::Point position;
 
-	bool map_boundary_reached;
-	
-	MoveDroneClient();
-
 	MoveDroneClient(ros::NodeHandle&);
 
 	/// \brief Clips the angle between -pi and pi
@@ -68,12 +66,15 @@ public:
 	static double euclideanDistance(const geometry_msgs::Point&,
 		const geometry_msgs::Point&);
 
+	/// \brief Returns the shortest difference between two angles
+	static double angularDifference(const double&, const double&);
+
 	geometry_msgs::Point generateWayPoint(const double &waypoint_heading);
 
 	void followDirection(const double &waypoint_heading, 
 		const std::shared_ptr<double> waypoint_res);
 
-	void followDirection(const double &waypoint_heading);
+	void followDirection(double waypoint_heading);
 
 	void goToWaypoint(const geometry_msgs::Point &waypoint);
 
@@ -82,5 +83,9 @@ public:
 	bool reachedWaypoint() const;
 
 	bool initialized() const;
+
+	bool isMoving() const;
+
+	bool mapBoundaryReached() const;
 
 };

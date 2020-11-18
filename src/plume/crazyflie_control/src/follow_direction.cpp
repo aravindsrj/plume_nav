@@ -46,7 +46,7 @@ public:
 FollowDirection::FollowDirection():
 m_goal_velocity(0.0),
 m_gain_angular(3.0),
-m_epslion_angle(5e-3),
+m_epslion_angle(5e-2),
 m_server(nh, "follow_direction", false)
 {
   m_pos_sub = nh.subscribe("/base_pose_ground_truth", 10, &FollowDirection::posCallback, this);
@@ -64,6 +64,8 @@ void FollowDirection::goalCallback()
   
   m_goal_velocity = goal->velocity;
   m_goal_heading = goal->heading;
+
+  // ROS_WARN("Goal velocity: %f; Heading: %f", m_goal_velocity, m_goal_heading);
 }
 
 void FollowDirection::posCallback(const nav_msgs::Odometry::ConstPtr& msg)
@@ -107,7 +109,7 @@ void FollowDirection::publishVelocity()
   }
 
   // If there is angle difference, stop moving, and start turning
-  if (fabs(m_goal_heading - m_states.theta) > m_epslion_angle)
+  if (fabs(angularDifference(m_goal_heading, m_states.theta)) > m_epslion_angle)
   {
     m_vel_msg.linear.x = 0;
     m_vel_msg.angular.z = m_gain_angular * angularDifference(m_states.theta, m_goal_heading);
@@ -123,7 +125,7 @@ void FollowDirection::publishVelocity()
   // If action is waiting to be completed
   if (m_server.isActive())
   {
-    if (fabs(m_goal_heading - m_states.theta) <= m_epslion_angle 
+    if (fabs(angularDifference(m_goal_heading, m_states.theta)) <= m_epslion_angle 
       and m_vel_msg.linear.x == m_goal_velocity)
     {
       m_server.setSucceeded();

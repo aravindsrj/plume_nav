@@ -15,6 +15,7 @@ enum Movement
   NOT_STARTED,
   FIRST_FLANK,
   SECOND_FLANK,
+  MAX_CONCENTRATION,
   STOPPED,
   COMPLETED
 };
@@ -226,29 +227,28 @@ void RasterSearch::run()
   if (!m_server.isActive())
     return;
 
-  if (!m_wind_history_full)
-  {
-    ROS_INFO_ONCE("[Raster] Collecting wind data");
-    return;
-  }
-
-  if (!m_drone_initialized)
-  {
-    if (m_drone.initialized())
-    {
-      m_start_position = m_drone.position;
-      m_drone_initialized = true;
-    }
-    else
-    {
-      ROS_INFO_ONCE("[Raster] Waiting for drone to initialize");
-      return;
-    }
-  }
-
   switch (m_movement)
   {
     case NOT_STARTED:
+      if (!m_wind_history_full)
+      {
+        ROS_INFO_ONCE("[Raster] Collecting wind data");
+        return;
+      }
+
+      if (!m_drone_initialized)
+      {
+        if (m_drone.initialized())
+        {
+          m_start_position = m_drone.position;
+          m_drone_initialized = true;
+        }
+        else
+        {
+          ROS_INFO_ONCE("[Raster] Waiting for drone to initialize");
+          return;
+        }
+      }
 
       // Get heading direction perpendicular to wind
       m_heading = m_wind_dir_history.mean() + m_alpha * M_PI/2;
@@ -272,8 +272,24 @@ void RasterSearch::run()
       if (flankScan())
       {
         // Stop raster scan if both flanks are complete
+        m_movement = MAX_CONCENTRATION;
+      }
+
+    case MAX_CONCENTRATION:
+      if (m_movement != MAX_CONCENTRATION)
+        break;
+      ROS_INFO_ONCE("Moving to max concentration");
+      if (!m_goal_point_sent)
+      {
+        m_drone.goToWaypoint(m_max_concentration_at);
+        m_goal_point_sent = true;
+      }
+      if (m_drone.reachedWaypoint() and m_goal_point_sent)
+      {
+        m_goal_point_sent = false;
         m_movement = STOPPED;
       }
+      break;
     case STOPPED:
       if (m_movement != STOPPED)
         break;
