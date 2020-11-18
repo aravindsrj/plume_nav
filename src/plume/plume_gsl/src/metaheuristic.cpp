@@ -19,6 +19,7 @@ m_max_concentration_value(-1),
 m_lost_plume_counter_maxlimit(3),
 m_distance_from_waypoint(0.0),
 m_maintain_dir_prob(0.4),
+m_direction_noise(0),
 m_drone(m_nh)
 {
 	std::vector<double> temp_ranges;
@@ -67,9 +68,6 @@ m_drone(m_nh)
 		5, &Localization::concentrationCallback, this);
 	m_prob_sub = m_nh.subscribe("/max_probability", 
 		10, &Localization::maxSourceProbabilityCallback, this);
-
-	// Seed random number generator
-	std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
 	m_raster_client.waitForServer(ros::Duration(3.0));
 	ROS_ERROR_COND(!m_raster_client.isServerConnected(),
@@ -150,13 +148,29 @@ void Localization::declareSourceCondition()
 
 void Localization::getHeuristicMeta()
 {
-	std::default_random_engine generator;
+	std::random_device rd;
+	std::mt19937_64 generator(rd());
 	std::normal_distribution<double> distribution(0.0, m_meta_std);
 	m_heading_angle = atan2(m_max_source_probability.y - m_drone.position.y,
 		m_max_source_probability.x - m_drone.position.x);
-	m_heading_angle += distribution(generator);
-	ROS_INFO("Choosing direction with respect to max probability. Angle = %.3lf degrees",
-		m_heading_angle * 180 / M_PI);
+	double noise = distribution(generator);
+	if (m_direction_noise == 0)
+	{
+		m_direction_noise = noise > 0? 1 : -1;
+	}
+	else
+	{
+		m_direction_noise *= -1;
+
+		if ((m_direction_noise > 0 and noise < 0) or (m_direction_noise < 0 and noise > 0))
+		{
+			noise *= -1;
+		}
+	}
+	m_heading_angle += noise;
+	m_heading_angle = MoveDroneClient::normalizeAngle(m_heading_angle);
+	ROS_INFO("Choosing direction with respect to max probability. Angle = %.3lf degrees. Noise = %.2f",
+		m_heading_angle * 180 / M_PI, noise * 180 / M_PI);
 	#if DEBUG
 		// ROS_WARN("End of getHeuristicMeta");
 	#endif
@@ -301,7 +315,7 @@ void Localization::run()
 			m_status = INCOMPLETE_INITIAL_HEURISTIC;
 
 			#if DEBUG
-			// break; // Skip initial raster scan
+			break; // Skip initial raster scan
 			#endif
 
 			if (m_algorithm == ZIGZAG)
