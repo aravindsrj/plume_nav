@@ -67,10 +67,32 @@ m_waypoint_client(nh, "/waypoint", true),
 m_reached_waypoint(true),
 m_position_initialized(false),
 m_epsilon_angle(5e-2),
-map_boundary_reached(false)
+m_map_boundary_threshold(0.5),
+m_map_boundary_reached(false)
 {
 	// Parameters
 	m_default_velocity = 0.5;
+
+	// Initialize temporary vector to hold parameters
+	std::vector<double> temp_ranges;
+
+	// Get map boundary - x dimension
+	m_nh->param("xlims", temp_ranges, std::vector<double>{0.0, 20.0});
+
+	// Set map boundary - x dimension 
+	m_xbounds.setRange(temp_ranges);
+
+	// Get map boundary - y dimension
+	m_nh->param("ylims", temp_ranges, std::vector<double>{0.0, 20.0});
+
+	// Set map boundary - y dimension 
+	m_ybounds.setRange(temp_ranges);
+
+	// Add thresholds to the map boundary
+	m_xbounds.min += m_map_boundary_threshold;
+	m_xbounds.max -= m_map_boundary_threshold;
+	m_ybounds.min += m_map_boundary_threshold;
+	m_ybounds.max -= m_map_boundary_threshold;
 	
 	m_action_client.waitForServer(ros::Duration(10.0));
 	if (!m_action_client.isServerConnected())
@@ -96,6 +118,16 @@ void MoveDroneClient::dronePositionCallback(const nav_msgs::Odometry::ConstPtr& 
 	m_drone_heading = tf::getYaw(msg->pose.pose.orientation);
 	m_position_initialized = true;
 	// ROS_WARN("In drone position callback");
+
+	// Check if drone is within map boundaries
+	if (m_xbounds.min < position.x and position.x < m_xbounds.max
+			and m_ybounds.min < position.y and position.y < m_ybounds.max)
+		m_map_boundary_reached = false;
+	else
+	{
+		m_map_boundary_reached = true;
+	}
+	
 }
 
 void MoveDroneClient::waypointDoneCallback(
@@ -125,6 +157,14 @@ void MoveDroneClient::goToWaypoint(const geometry_msgs::Point &waypoint)
 
 void MoveDroneClient::followDirection(double heading)
 {
+	if (m_map_boundary_reached)
+	{
+		ROS_WARN("[MDC]: Map boundary reached");
+		
+		// TODO Allow movements away from map boundary
+		stopMoving();
+	}
+	
 	heading = normalizeAngle(heading);
 	if (fabs(MoveDroneClient::angularDifference(heading,m_drone_heading)) < m_epsilon_angle 
 		&& m_goal.velocity == m_default_velocity)
@@ -171,4 +211,9 @@ bool MoveDroneClient::isMoving() const
 		return false;
 	else
 		return true;	
+}
+
+bool MoveDroneClient::mapBoundaryReached() const
+{
+	return m_map_boundary_reached;
 }

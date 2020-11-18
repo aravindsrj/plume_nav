@@ -301,7 +301,7 @@ void Localization::windCallback(const olfaction_msgs::anemometer::ConstPtr &msg)
 
 void Localization::run()
 {
-	if (m_drone.map_boundary_reached)
+	if (m_drone.mapBoundaryReached())
 		m_status = AT_MAP_BOUNDARY;
 
 	switch(m_status)

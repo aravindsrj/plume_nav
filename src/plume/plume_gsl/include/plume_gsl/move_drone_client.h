@@ -35,6 +35,7 @@ class MoveDroneClient
 
 	Range m_xbounds, m_ybounds;
 
+	double m_map_boundary_threshold;
 	double m_waypoint_resolution;
 	double m_position_resolution;
 	double m_drone_heading;
@@ -44,6 +45,7 @@ class MoveDroneClient
 
 	bool m_reached_waypoint;
 	bool m_position_initialized;
+	bool m_map_boundary_reached;
 	
 	void dronePositionCallback(const nav_msgs::Odometry::ConstPtr& msg);
 
@@ -87,5 +89,7 @@ public:
 	bool initialized() const;
 
 	bool isMoving() const;
+
+	bool mapBoundaryReached() const;
 
 };
