@@ -34,8 +34,7 @@ enum RunStatus
 	MOVING_TO_WAYPOINT,
 	REACHED_WAYPOINT,
 	REACHED_SOURCE,
-	LOST_PLUME,
-	AT_MAP_BOUNDARY
+	LOST_PLUME
 };
 
 
@@ -65,10 +64,10 @@ class Localization
 	geometry_msgs::Point m_last_detected_point;
 	olfaction_msgs::gas_sensor m_current_gas_concentration;
 	
+	int m_lost_plume_counter_maxlimit;
 	unsigned int m_lost_plume_counter;
-	unsigned int m_lost_plume_counter_maxlimit;
-	unsigned int m_losing_plume_counter;
 	unsigned int m_losing_plume_counter_maxlimit;
+	unsigned int m_losing_plume_counter;
 
 	/// \brief Number of concentration readings required to calculate gradient
 	int m_min_concentration_readings;
@@ -95,7 +94,6 @@ class Localization
 
 	bool m_max_prob_message_received;
 	bool m_moving_to_source;
-	bool m_lost_plume;
 	bool m_in_raster_scan;
 	bool m_initial_scan_complete;
 	bool m_got_initial_heuristic;

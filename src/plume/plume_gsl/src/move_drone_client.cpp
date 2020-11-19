@@ -114,11 +114,11 @@ void MoveDroneClient::waypointDoneCallback(
 {
 	if (state != actionlib::SimpleClientGoalState::SUCCEEDED)
 	{
-		ROS_ERROR("Waypoint complete - error");
+		ROS_ERROR("[MDC]: Waypoint complete - error");
 		return;
 	}
 	m_reached_waypoint = true;
-	ROS_INFO("Waypoint reached");
+	ROS_INFO("[MDC]: Waypoint reached");
 }
 
 void MoveDroneClient::goToWaypoint(const geometry_msgs::Point &waypoint)
@@ -155,7 +155,7 @@ void MoveDroneClient::followDirection(double heading)
 	// Send goal and check if successful
 	if (m_action_client.sendGoalAndWait(m_goal, ros::Duration(2.0)) 
 			!= actionlib::SimpleClientGoalState::SUCCEEDED)
-		ROS_ERROR("Follow_direction action not complete");
+		ROS_ERROR("[MDC]: Follow_direction action not complete");
 	// m_action_client.sendGoal(m_goal);
 	return;
 }
