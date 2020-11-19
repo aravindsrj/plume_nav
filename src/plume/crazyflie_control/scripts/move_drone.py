@@ -75,7 +75,7 @@ class MoveDrone:
 
             angle_to_goal = math.atan2((self.goal_y - self.drone_curr_y), (self.goal_x - self.drone_curr_x))
         
-            if abs(angle_to_goal - self.drone_curr_heading) > self._angle_epsilon:
+            if abs(self.angular_difference(angle_to_goal, self.drone_curr_heading)) > self._angle_epsilon:
                 self.vel_msg.linear.x = 0
                 self.vel_msg.angular.z = self._angular_gain * self.angular_difference(self.drone_curr_heading, angle_to_goal)
             else:
