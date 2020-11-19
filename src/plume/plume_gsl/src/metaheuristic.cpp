@@ -78,6 +78,9 @@ m_drone(m_nh)
 	m_algorithm = METAHEURISTIC;
 
 	m_status = START;
+
+	// Generate seed for random number
+	srand((unsigned) time(0));
 }
 
 void Localization::callRasterScan(const double& distance)
