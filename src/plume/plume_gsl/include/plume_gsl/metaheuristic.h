@@ -34,6 +34,7 @@ enum RunStatus
 	MOVING_TO_WAYPOINT,
 	REACHED_WAYPOINT,
 	REACHED_SOURCE,
+	LOST_PLUME,
 	AT_MAP_BOUNDARY
 };
 
@@ -59,10 +60,15 @@ class Localization
 	geometry_msgs::Point m_max_source_probability;
 	geometry_msgs::Point m_max_concentration_at;
 	geometry_msgs::Point m_previous_position;
+
+	/// \brief The position in the map where gas concentration was last detected
+	geometry_msgs::Point m_last_detected_point;
 	olfaction_msgs::gas_sensor m_current_gas_concentration;
 	
 	unsigned int m_lost_plume_counter;
 	unsigned int m_lost_plume_counter_maxlimit;
+	unsigned int m_losing_plume_counter;
+	unsigned int m_losing_plume_counter_maxlimit;
 
 	/// \brief Number of concentration readings required to calculate gradient
 	int m_min_concentration_readings;
@@ -95,6 +101,7 @@ class Localization
 	bool m_got_initial_heuristic;
 	bool m_source_reached;
 	bool m_reached_waypoint;
+	bool m_goal_point_sent;
 
 	tf::TransformListener m_tf;
 

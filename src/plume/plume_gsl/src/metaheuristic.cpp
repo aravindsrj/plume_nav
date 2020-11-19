@@ -14,8 +14,11 @@ m_in_raster_scan(false),
 m_initial_scan_complete(false),
 m_got_initial_heuristic(false),
 m_source_reached(false),
+m_goal_point_sent(false),
+m_losing_plume_counter(0),
 m_lost_plume_counter(0),
 m_max_concentration_value(-1),
+m_losing_plume_counter_maxlimit(3),
 m_lost_plume_counter_maxlimit(3),
 m_distance_from_waypoint(0.0),
 m_maintain_dir_prob(0.4),
@@ -126,6 +129,11 @@ void Localization::concentrationCallback(const olfaction_msgs::gas_sensor::Const
 {
 	m_current_gas_concentration = *msg;
 
+	// Updating the position of the last detected point
+	if (m_current_gas_concentration.raw > m_epsilon_concentration
+			and !m_drone.mapBoundaryReached())
+		m_last_detected_point = m_drone.position;
+	
 	// Updating the vector for recent concentrations. Automatically pops when size exceeds
 	m_concentration_points.append(std::make_pair(msg->raw, m_drone.position));
 
@@ -301,12 +309,15 @@ void Localization::windCallback(const olfaction_msgs::anemometer::ConstPtr &msg)
 
 void Localization::run()
 {
-	if (m_drone.mapBoundaryReached())
-		m_status = AT_MAP_BOUNDARY;
+	if (m_drone.mapBoundaryReached() and m_status != REACHED_SOURCE)
+		m_status = LOST_PLUME;
 
 	switch(m_status)
 	{
 		case REACHED_SOURCE:
+			ROS_INFO_ONCE("Reached Source");
+			m_status = REACHED_SOURCE;
+			m_drone.stopMoving();
 			break;
 
 		case START:
@@ -405,6 +416,8 @@ void Localization::run()
 
 			if (m_reached_waypoint and !m_source_reached)
 			{
+
+				// TODO This if condition might have to be eliminated
 				if (m_lost_plume)
 				{
 					if (m_concentration_history.back() > m_epsilon_concentration)
@@ -438,7 +451,7 @@ void Localization::run()
 				{
 					// Continue with same heading
 					ROS_INFO("[Metaheuristic]: Gradient > epsilon");
-					m_lost_plume_counter = 0;
+					m_losing_plume_counter = 0;
 					changeTemperature();
 				}
 				else // Decreasing gradient
@@ -450,8 +463,8 @@ void Localization::run()
 
 					if (m_concentration_history.mean() < m_epsilon_concentration)
 					{
-						++m_lost_plume_counter;
-						if (m_lost_plume_counter < m_lost_plume_counter_maxlimit)
+						++m_losing_plume_counter;
+						if (m_losing_plume_counter < m_losing_plume_counter_maxlimit)
 						{
 							ROS_WARN("[Metaheuristic]: Concentration too low. Getting new heuristic");
 							getNewHeuristic();
@@ -460,17 +473,15 @@ void Localization::run()
 						{
 							ROS_WARN("[Metaheuristic]: Plume lost due to low concentration");
 							m_lost_plume = true;
-							m_lost_plume_counter = 0;
-
-							// TODO Recovery procedure
-							callRasterScan(2.0);
-							m_status = IN_RASTER_SCAN;
+							m_losing_plume_counter = 0;
+							m_drone.stopMoving();
+							m_status = LOST_PLUME;
 							break;
 						}
 					}
 					else if (m_maintain_dir_prob > (double)rand()/RAND_MAX)
 					{
-						m_lost_plume_counter = 0;
+						m_losing_plume_counter = 0;
 
 						ROS_INFO("[Metaheuristic]: Maintaining direction probability");
 						if (m_algorithm == METAHEURISTIC)
@@ -482,7 +493,7 @@ void Localization::run()
 					}
 					else
 					{
-						m_lost_plume_counter = 0;
+						m_losing_plume_counter = 0;
 
 						ROS_WARN("[Metaheuristic]: Low gradient. Getting new heuristic");
 						if (m_algorithm == METAHEURISTIC)
@@ -512,6 +523,52 @@ void Localization::run()
 			m_status = MOVING_TO_WAYPOINT;
 			break;
 
+		case LOST_PLUME:
+
+			// TODO This variable can be eliminated?
+			m_lost_plume = false;
+
+			if (!m_goal_point_sent and m_drone.reachedWaypoint())
+			{
+				++m_lost_plume_counter;
+				ROS_WARN("[Metaheuristic]: Lost Plume. Number of times lost plume: %d/%d", 
+					m_lost_plume_counter, m_lost_plume_counter_maxlimit);
+			}
+
+			if (m_lost_plume_counter >= m_lost_plume_counter_maxlimit)
+			{
+				ROS_WARN_ONCE("Moving to source conditions");
+				if (!m_goal_point_sent)
+				{
+					m_drone.goToWaypoint(m_last_detected_point);
+					m_goal_point_sent = true;
+				}
+				if (m_drone.reachedWaypoint() and m_goal_point_sent)
+				{
+					m_goal_point_sent = false;
+					
+					// TODO Source declaration after doing raster scan
+					m_drone.stopMoving();
+					m_status = REACHED_SOURCE;
+					ROS_INFO("Changed status to REACHED_SOURCE");
+				}
+				
+				break;
+			}
+
+			if (!m_goal_point_sent)
+			{
+				m_drone.goToWaypoint(m_last_detected_point);
+				m_goal_point_sent = true;
+			}
+			if (m_drone.reachedWaypoint() and m_goal_point_sent)
+			{
+				m_goal_point_sent = false;
+				callRasterScan(2.0);
+				m_status = IN_RASTER_SCAN;
+			}
+			break;
+
 		case AT_MAP_BOUNDARY:
 
 			ROS_WARN("[Metaheuristic]: Map boundary reached. Plume lost.");
@@ -522,6 +579,7 @@ void Localization::run()
 			ROS_INFO("[Metaheuristic]: Going to max concentration point");
 			goToMaxConcentration();
 
+			// TODO This might have to be changed
 			m_status = MOVING_TO_WAYPOINT;
 
 			break;
