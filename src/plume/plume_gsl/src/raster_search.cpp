@@ -194,7 +194,7 @@ bool RasterSearch::flankScan()
   { // Moving away from start point
     // ROS_INFO("Not end reached. Distance from start = %.2lf", m_distance_from_start);
     m_drone.followDirection(m_heading);
-    if (m_distance_from_start >= m_goal_distance)
+    if (m_distance_from_start >= m_goal_distance or m_drone.mapBoundaryReached())
       m_end_reached = true;
   }
 
