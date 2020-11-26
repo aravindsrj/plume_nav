@@ -117,8 +117,8 @@ m_drone(m_nh)
   // Initialize result with zeros
   m_action_result.max_concentration_point.assign(3, 0.0);
 
-  // TODO this parameter should be sampled from a uniform distribution
-  m_alpha = 1;
+  // Seed random number
+  srand((unsigned) time(0));
 
   // sub = m_nh.subscribe<nav_msgs::Odometry>("/base_pose_ground_truth",1, boost::bind(&MoveDroneClient::dronePositionCallback, this, _1));
 
@@ -250,7 +250,11 @@ void RasterSearch::run()
         }
       }
 
-      // Get heading direction perpendicular to wind
+      // Get heading direction perpendicular to wind randomly
+      if ((double) rand()/RAND_MAX >= 0.5)
+        m_alpha = 1;
+      else
+        m_alpha = -1;
       m_heading = m_wind_dir_history.mean() + m_alpha * M_PI/2;
       m_movement = FIRST_FLANK;
 
