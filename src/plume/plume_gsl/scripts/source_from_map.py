@@ -41,6 +41,7 @@ max_x = 0
 max_y = 0
 rospy.Subscriber("mapping_viz",OccupancyGrid, callbackfn)
 pub = rospy.Publisher("max_probability", Point, queue_size=10)
+rospy.wait_for_message("mapping_viz", OccupancyGrid)
 
 max_prob = Point()
 max_prob.z = 0
