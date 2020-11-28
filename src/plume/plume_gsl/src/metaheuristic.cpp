@@ -311,6 +311,14 @@ void Localization::windCallback(const olfaction_msgs::anemometer::ConstPtr &msg)
 
 void Localization::run()
 {
+	// #if !DEBUG
+	if (!m_max_prob_message_received)
+	{
+		ROS_INFO_ONCE("Waiting to receive max probability message");
+		return;
+	}
+	// #endif
+
 	if (m_drone.mapBoundaryReached() and !m_moving_to_source)
 		m_status = LOST_PLUME;
 
