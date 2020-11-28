@@ -47,6 +47,7 @@ m_drone(m_nh)
 
 	m_nh.param("position_epsilon", m_epsilon_position, 3e-3);
 	m_nh.param("conc_grad_epsilon", m_epsilon_conc_grad, 0.0);
+	m_nh.param("high_conc_grad_epsilon", m_epsilon_high_conc_grad, 20.0);
 	m_nh.param("minimum_detectable_concentration", m_epsilon_concentration, m_concentration_range.min);
 	m_nh.param("probability_threshold", m_probability_threshold, 1e-4);
 	m_nh.param("probability_to_maintain_dir", m_maintain_dir_prob, 0.4);
@@ -62,7 +63,7 @@ m_drone(m_nh)
 	m_nh.param("min_number_of_conc_readings", m_min_concentration_readings, 5);
 	ROS_ASSERT(m_min_concentration_readings > 0);
 
-	m_concentration_history.setSize(10);
+	m_concentration_history.setSize(m_min_concentration_readings);
 
 	m_wind_sub = m_nh.subscribe("/Anemometer/WindSensor_reading", 
 		5, &Localization::windCallback, this);
@@ -466,6 +467,12 @@ void Localization::run()
 			{
 				// Continue with same heading
 				ROS_INFO("[Metaheuristic]: Gradient > epsilon");
+				m_losing_plume_counter = 0;
+				changeTemperature();
+			}
+			else if (m_concentration_history.mean() > m_epsilon_high_conc_grad)
+			{
+				ROS_WARN("[Metaheuristic]. Low gradient, but high concentration");
 				m_losing_plume_counter = 0;
 				changeTemperature();
 			}

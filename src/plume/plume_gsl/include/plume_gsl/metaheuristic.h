@@ -82,6 +82,7 @@ class Localization
 	double m_alpha;
 	double m_epsilon_position;
 	double m_epsilon_conc_grad;
+	double m_epsilon_high_conc_grad;
 	double m_epsilon_concentration;
 	double m_probability_threshold;
 	double m_maintain_dir_prob;
