@@ -40,6 +40,8 @@ m_drone(m_nh)
 	m_nh.param("fixed_frame", m_fixed_frame, std::string("map"));
 	m_nh.param("anemometer_frame", m_anemo_frame, std::string("anemometer_frame"));
 	m_nh.param("Initial_temperature", m_Temperature, 14.0);
+	m_nh.param("low_temperature", m_temperature_range.min, 5.0);
+	m_temperature_range.max = m_Temperature;
 	m_nh.param("delta_temperature", m_delta_temp, 0.5);
 	m_nh.param("meta_standard_deviation", m_meta_std, 0.2);
 	m_nh.param("initial_zigzag_angle", m_alpha, 35.0);
@@ -53,6 +55,10 @@ m_drone(m_nh)
 	m_nh.param("probability_to_maintain_dir", m_maintain_dir_prob, 0.4);
 	m_nh.param("lost_distance", m_lost_distance, 1.0);
 	m_nh.param("maxlimit_lost_plume_counter", m_lost_plume_counter_maxlimit, 2);
+
+	m_nh.getParam("waypoint_distance_range", temp_ranges);
+	m_resolution_range.setRange(temp_ranges);
+	calcWaypointSlopeIntercept();
 
 	m_nh.param("wind_history_size", i_temp, 15);
 	m_wind_dir_history.setSize(i_temp);
@@ -82,6 +88,13 @@ m_drone(m_nh)
 
 	// Generate seed for random number
 	srand((unsigned) time(0));
+}
+
+void Localization::calcWaypointSlopeIntercept()
+{
+	m_waypoint_res_slope = (m_resolution_range.max - m_resolution_range.min) /
+		(m_temperature_range.max - m_temperature_range.min);
+	m_waypoint_res_intercept = m_resolution_range.min - m_waypoint_res_slope*m_temperature_range.min;
 }
 
 void Localization::callRasterScan(const double& distance)
@@ -288,7 +301,13 @@ void Localization::rasterDone(const actionlib::SimpleClientGoalState& state,
 
 void Localization::waypointResCalc()
 {
-	// TODO Option to dynamically change waypoint resolution
+	m_waypoint_res = std::min(std::max(m_resolution_range.min, 
+		m_waypoint_res_slope*m_Temperature + m_waypoint_res_intercept),m_resolution_range.max);
+
+	#if DEBUG
+	ROS_WARN("Waypoint res = %.2lf", m_waypoint_res);
+	#endif
+
 	return;
 }
 

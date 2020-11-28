@@ -54,6 +54,7 @@ class Localization
 	actionlib::SimpleActionClient<plume_gsl::rasterScanAction> m_raster_client;
 
 	Range m_resolution_range;
+	Range m_temperature_range;
 	Range m_concentration_range;
 
 	geometry_msgs::Point m_max_source_probability;
@@ -89,6 +90,8 @@ class Localization
 	double m_max_concentration_value;
 	double m_distance_from_waypoint;
 	double m_waypoint_res;
+	double m_waypoint_res_slope;
+	double m_waypoint_res_intercept;
 
 	/// \brief Heading angle
 	double m_heading_angle;
