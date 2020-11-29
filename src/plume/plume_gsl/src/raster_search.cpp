@@ -147,8 +147,7 @@ void RasterSearch::goalCallback()
   goal = m_server.acceptNewGoal();
   m_goal_distance = goal->scan_distance;
 
-  // Clear previous data
-  m_wind_dir_history.clear();
+  // Clear previous concentration data
   m_concentration_points.clear();
 
   // Re-initialize some variables
@@ -164,9 +163,9 @@ void RasterSearch::goalCallback()
 
 void RasterSearch::windCallback(const olfaction_msgs::anemometer::ConstPtr& msg)
 {
-  // We have to process wind data only if the server is active
-  if (!m_server.isActive())
-    return;
+  // We process the wind data even if the server is inactive. 
+  // This way, when the server is activated at a later point, the program does not
+  // have to wait to collect new data. Recent data can be used.
   
   m_tf.waitForTransform(m_anemometer_frame, m_fixed_frame, 
 		ros::Time(0), ros::Duration(3.0));
