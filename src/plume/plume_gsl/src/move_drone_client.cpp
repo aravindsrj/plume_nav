@@ -160,6 +160,12 @@ void MoveDroneClient::followDirection(double heading)
 	return;
 }
 
+void MoveDroneClient::setVelocity(const double &velocity)
+{
+	ROS_ASSERT(velocity > 0);
+	m_default_velocity = velocity;
+}
+
 void MoveDroneClient::stopMoving()
 {
 	if (m_goal.velocity == 0)

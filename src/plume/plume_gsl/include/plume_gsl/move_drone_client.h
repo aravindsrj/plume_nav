@@ -74,6 +74,8 @@ public:
 	void followDirection(const double &waypoint_heading, 
 		const std::shared_ptr<double> waypoint_res);
 
+	void setVelocity(const double &velocity);
+
 	void followDirection(double waypoint_heading);
 
 	void goToWaypoint(const geometry_msgs::Point &waypoint);

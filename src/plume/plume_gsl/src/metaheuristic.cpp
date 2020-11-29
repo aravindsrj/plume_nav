@@ -1,7 +1,7 @@
 #include "plume_gsl/metaheuristic.h"
 #include <random>
 
-#define DEBUG 0
+#define DEBUG 1
 
 Localization::Localization() :
 m_waypoint_client("waypoint"),
@@ -59,6 +59,8 @@ m_drone(m_nh)
 	m_nh.getParam("waypoint_distance_range", temp_ranges);
 	m_resolution_range.setRange(temp_ranges);
 	calcWaypointSlopeIntercept();
+
+	m_nh.param("max_velocity", m_max_velocity, 0.5);
 
 	m_nh.param("wind_history_size", i_temp, 15);
 	m_wind_dir_history.setSize(i_temp);
@@ -162,6 +164,8 @@ void Localization::concentrationCallback(const olfaction_msgs::gas_sensor::Const
 	// Updating the concentration history queue. This will be subsequently cleared in run()
 
 	m_concentration_history.append(msg->raw);
+
+	m_concentration_time.record();
 }
 
 void Localization::declareSourceCondition()
@@ -329,12 +333,26 @@ void Localization::windCallback(const olfaction_msgs::anemometer::ConstPtr &msg)
 
 }
 
+double Localization::velocityCalc()
+{
+	// Minimum time required to traverse the distance between two waypoints = 
+	// time taken between two successive concentration readings multiplied by the 
+	// minimum number of concentration readings required between two waypoints
+	double min_time = m_concentration_time.rate() * m_min_concentration_readings;
+
+	double velocity = std::min(m_waypoint_res / min_time, m_max_velocity);
+
+	ROS_INFO("[Metaheuristic]: Velocity changed to: %.3lf", velocity);
+
+	return velocity;
+}
+
 void Localization::run()
 {
 	// #if !DEBUG
 	if (!m_max_prob_message_received)
 	{
-		ROS_INFO_ONCE("Waiting to receive max probability message");
+		ROS_INFO_ONCE("[Metaheuristic]: Waiting to receive max probability message");
 		return;
 	}
 	// #endif
@@ -409,6 +427,7 @@ void Localization::run()
 				break;
 			}
 			waypointResCalc();
+			m_drone.setVelocity(velocityCalc());
 			m_drone.followDirection(m_heading_angle);
 			m_reached_waypoint = false;
 
@@ -546,14 +565,15 @@ void Localization::run()
 
 			// Calculate waypoint resolution and move
 			waypointResCalc();
+			m_drone.setVelocity(velocityCalc());
 			m_drone.followDirection(m_heading_angle);
 
 			ROS_ASSERT(m_drone.isMoving());
 			
 			m_concentration_history.clear();
-			#if DEBUG
-			ROS_WARN("[Metaheuristic]: Concentration history cleared");
-			#endif
+			// #if DEBUG
+			// ROS_WARN("[Metaheuristic]: Concentration history cleared");
+			// #endif
 			// }
 			// else // Source reached
 			// {

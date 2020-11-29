@@ -231,7 +231,7 @@ class Prob_Mapping:
             if not self.adjust_wind_interval(x_pos, y_pos, detect=detection):
                 continue 
 
-            # rospy.loginfo("x,y = [%.2f,%.2f], Gas concentration: %.2f",x_pos,y_pos,gas_conc)
+            rospy.loginfo("x,y = [%.2f,%.2f], Gas concentration: %.2f",x_pos,y_pos,gas_conc)
 
             # Wind values from t_L to t_K without accounting for the 'time' column of wind_history
             wind_data = np.delete(self.wind_history[self.L:K+1],2,1).astype(float)

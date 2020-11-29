@@ -37,6 +37,24 @@ enum RunStatus
 	LOST_PLUME
 };
 
+struct RosTime
+{
+	ros::Time current, previous;
+	ros::Duration duration;
+	
+	void record()
+	{
+		current = ros::Time::now();
+		duration = current - previous;
+		previous = current;
+	}
+	
+	double rate()
+	{
+		return duration.toSec();
+	}
+};
+
 
 class Localization
 {
@@ -56,6 +74,8 @@ class Localization
 	Range m_resolution_range;
 	Range m_temperature_range;
 	Range m_concentration_range;
+
+	RosTime m_concentration_time;
 
 	geometry_msgs::Point m_max_source_probability;
 	geometry_msgs::Point m_max_concentration_at;
@@ -90,6 +110,7 @@ class Localization
 	double m_max_concentration_value;
 	double m_distance_from_waypoint;
 	double m_waypoint_res;
+	double m_max_velocity;
 	double m_waypoint_res_slope;
 	double m_waypoint_res_intercept;
 
@@ -149,6 +170,8 @@ class Localization
 
 	void rasterDone(const actionlib::SimpleClientGoalState&,
 		const plume_gsl::rasterScanResultConstPtr&);
+
+	double velocityCalc();
 
 	/// \brief Calculate resolution of waypoint based on concentration readings
 	void waypointResCalc();
